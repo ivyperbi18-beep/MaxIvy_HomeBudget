@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Budget Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght=0,400..900;1,400..900&display=swap');
+        .serif-title {
+            font-family: 'Playfair Display', Georgia, serif;
+        }
+    </style>
+</head>
+<body class="bg-[#faf9f6] text-slate-800 antialiased font-sans" x-data="budgetApp()">
+
+    <header class="sticky top-0 z-50 bg-white border-b border-teal-600/20 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-12">
+                <h1 class="text-2xl font-black tracking-tight text-[#b22222] serif-title">FAMILY BUDGET</h1>
+                <nav class="flex space-x-3 bg-slate-100/80 p-1.5 rounded-full border border-slate-200">
+                    <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-[#008080] text-white' : 'text-slate-600 hover:text-slate-900'" class="px-5 py-2 text-sm font-bold rounded-full transition-all cursor-pointer">📊 Dashboard</button>
+                    <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-[#008080] text-white' : 'text-slate-600 hover:text-slate-900'" class="px-5 py-2 text-sm font-bold rounded-full transition-all cursor-pointer">➕ Allotments</button>
+                    <button @click="activeTab = 'expenses'" :class="activeTab === 'expenses' ? 'bg-[#008080] text-white' : 'text-slate-600 hover:text-slate-900'" class="px-5 py-2 text-sm font-bold rounded-full transition-all cursor-pointer">💸 Transactions</button>
+                    <button @click="activeTab = 'history'" :class="activeTab === 'history' ? 'bg-[#008080] text-white' : 'text-slate-600 hover:text-slate-900'" class="px-5 py-2 text-sm font-bold rounded-full transition-all cursor-pointer">📋 History</button>
+                </nav>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <button @click="copySyncLink()" :class="copied ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'" class="px-4 py-2 text-xs font-bold rounded-lg border transition-all flex items-center space-x-1 cursor-pointer shadow-2xs">
+                    <span x-text="copied ? '✓ Link Copied!' : '🔗 Link iPad'"></span>
+                </button>
+                <div class="h-4 w-px bg-slate-200"></div>
+                <span class="text-sm font-bold text-slate-600">Maxwell</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-10">
+        
+        <div x-show="activeTab === 'dashboard'" class="space-y-8">
+            <div class="max-w-md bg-white p-6 rounded-2xl border border-slate-200 shadow-xs relative group">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Stanbic Joint Account Balance</p>
+                <p class="text-3xl font-black text-slate-900 mt-1">GH₵ <span x-text="formatCurrency(stanbicBalance)"></span></p>
+                <button @click="editingBank = true; bankAmountInput = stanbicBalance" class="absolute top-6 right-6 text-xs text-[#008080] font-bold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer underline">Adjust Balance</button>
+            </div>
+
+            <div x-show="editingBank" class="p-4 bg-teal-50/50 border border-teal-100 rounded-xl flex items-center max-w-xl" style="display: none;">
+                <div class="flex items-center space-x-4 w-full">
+                    <span class="text-sm font-bold text-teal-900">Update Balance:</span>
+                    <input type="number" step="0.01" x-model="bankAmountInput" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white outline-hidden" placeholder="GH₵ 0.00">
+                    <button @click="updateBankBalance()" class="px-4 py-1.5 bg-[#008080] text-white rounded-lg text-sm font-bold hover:bg-teal-800 cursor-pointer">Update</button>
+                    <button @click="editingBank = false" class="text-sm text-slate-500 font-medium hover:underline cursor-pointer">Cancel</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+                    <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider">Main Budget Breakdown Matrix</h3>
+                    <div class="flex items-center space-x-3">
+                        <select x-model="selectedYear" class="bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 py-1.5 px-3 cursor-pointer outline-hidden shadow-2xs">
+                            <template x-for="yr in getAvailableYears()" :key="yr">
+                                <option :value="yr" x-text="yr"></option>
+                            </template>
+                        </select>
+                        <button @click="createNewYear()" class="bg-[#008080] hover:bg-teal-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer flex items-center space-x-1">
+                            <span>➕ Add Year</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#008080] text-white font-bold text-xs uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-4 w-1/3">Category Breakdown Matrix</th>
+                                <th class="p-4 text-right">Annual Target Budget</th>
+                                <th class="p-4 text-right">Total Money Given</th>
+                                <th class="p-4 text-right">Total Money Spent</th>
+                                <th class="p-4 text-right">Money Remaining</th>
+                                <th class="p-4 text-right">Balance to Allot</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm font-medium">
+                            <template x-for="cat in currentCategories()" :key="cat.name">
+                                <tr class="hover:bg-slate-50/60 transition-colors">
+                                    <td class="p-4">
+                                        <div class="font-bold text-[#008080] text-base" x-text="cat.name"></div>
+                                        <div class="text-xs text-slate-400 font-normal mt-0.5" x-text="cat.includes"></div>
+                                    </td>
+                                    <td class="p-4 text-right font-mono text-slate-600">GH₵ <span x-text="formatCurrency(cat.annualBudget)"></span></td>
+                                    <td class="p-4 text-right font-mono text-emerald-600 font-bold">GH₵ <span x-text="formatCurrency(getCategoryMetrics(cat.name).given)"></span></td>
+                                    <td class="p-4 text-right font-mono text-amber-600 font-bold">GH₵ <span x-text="formatCurrency(getCategoryMetrics(cat.name).spent)"></span></td>
+                                    <td class="p-4 text-right font-mono font-black text-slate-900">GH₵ <span x-text="formatCurrency(getCategoryMetrics(cat.name).remaining)"></span></td>
+                                    <td class="p-4 text-right font-mono text-slate-400">GH₵ <span x-text="formatCurrency(cat.annualBudget - getCategoryMetrics(cat.name).given)"></span></td>
+                                </tr>
+                            </template>
+                            <tr class="bg-[#ffcc00]/90 text-amber-950 font-bold border-t-2 border-amber-300">
+                                <td class="p-4">
+                                    <div class="text-slate-900 font-black text-base serif-title">Grand Total</div>
+                                    <div class="text-xs text-amber-900/60 font-normal">All Items Together</div>
+                                </td>
+                                <td class="p-4 text-right font-mono">GH₵ <span x-text="formatCurrency(getTotalBudget())"></span></td>
+                                <td class="p-4 text-right font-mono">GH₵ <span x-text="formatCurrency(getTotalGiven())"></span></td>
+                                <td class="p-4 text-right font-mono">GH₵ <span x-text="formatCurrency(getTotalSpent())"></span></td>
+                                <td class="p-4 text-right font-mono text-base font-black text-teal-900">GH₵ <span x-text="formatCurrency(getTotalRemaining())"></span></td>
+                                <td class="p-4 text-right font-mono">GH₵ <span x-text="formatCurrency(getTotalBudget() - getTotalGiven())"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'allotments'" class="grid grid-cols-1 lg:grid-cols-3 gap-8" style="display: none;">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs h-fit">
+                <h3 class="text-xl font-black text-[#008080] serif-title text-center mb-6" x-text="editingAllotmentId !== null ? '✍️ Edit Allotment' : 'Add Budget Allotment'"></h3>
+                <form @submit.prevent="saveAllotment()" class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
+                        <input type="date" required x-model="allotmentForm.date" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-hidden focus:ring-2 focus:ring-teal-500 bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Category Target</label>
+                        <select x-model="allotmentForm.category" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white outline-hidden focus:ring-2 focus:ring-teal-500 cursor-pointer">
+                            <template x-for="cat in currentCategories()" :key="cat.name">
+                                <option :value="cat.name" x-text="cat.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Amount (GH₵)</label>
+                        <input type="number" step="0.01" required placeholder="0.00" x-model="allotmentForm.amount" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-hidden focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Notes (optional)</label>
+                        <input type="text" placeholder="e.g. January funding" x-model="allotmentForm.notes" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-hidden focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="flex space-x-2 pt-2">
+                        <button type="submit" class="w-full py-3 bg-[#008080] text-white rounded-lg text-sm font-bold hover:bg-teal-800 transition-all cursor-pointer shadow-xs" x-text="editingAllotmentId !== null ? 'Save Changes' : 'Save Allotment'"></button>
+                        <button type="button" x-show="editingAllotmentId !== null" @click="resetAllotmentForm()" class="px-4 py-3 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="p-5 border-b border-slate-200 bg-slate-50/50 flex items-center justify-center"><h3 class="font-black text-lg text-[#b22222] serif-title">Allotment History</h3></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-[#008080] text-white uppercase text-xs font-bold tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-4">Date</th>
+                                <th class="p-4">Category</th>
+                                <th class="p-4 text-right">Amount</th>
+                                <th class="p-4">Notes</th>
+                                <th class="p-4 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-medium">
+                            <template x-if="allotments.length === 0">
+                                <tr><td colSpan="5" class="p-8 text-center text-slate-400 font-normal">No allotments yet</td></tr>
+                            </template>
+                            <template x-for="(a, index) in allotments" :key="index">
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-4 whitespace-nowrap" x-text="formatDisplayDate(a.date)"></td>
+                                    <td class="p-4 text-[#008080] font-bold" x-text="a.category"></td>
+                                    <td class="p-4 text-right font-mono font-bold text-slate-900">GH₵ <span x-text="formatCurrency(a.amount)"></span></td>
+                                    <td class="p-4 text-slate-400 max-w-xs truncate" x-text="a.notes || '—'"></td>
+                                    <td class="p-4 text-center whitespace-nowrap space-x-3">
+                                        <button @click="startEditAllotment(index)" class="text-xs text-blue-600 font-bold hover:underline cursor-pointer">Edit</button>
+                                        <button @click="deleteItem('allotments', index)" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">Delete</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'expenses'" class="grid grid-cols-1 lg:grid-cols-3 gap-8" style="display: none;">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs h-fit">
+                <h3 class="text-xl font-black text-[#008080] serif-title text-center mb-6" x-text="editingExpenseId !== null ? '✍️ Edit Expense' : 'Log a Spent Transaction'"></h3>
+                <form @submit.prevent="saveExpense()" class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
+                        <input type="date" required x-model="expenseForm.date" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-hidden focus:ring-2 focus:ring-teal-500 bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description</label>
+                        <input type="text" required placeholder="e.g. Light bill, Groceries" x-model="expenseForm.description" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-hidden focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Category</label>
+                        <select x-model="expenseForm.category" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white outline-hidden focus:ring-2 focus:ring-teal-500 cursor-pointer">
+                            <template x-for="cat in currentCategories()" :key="cat.name">
+                                <option :value="cat.name" x-text="cat.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Amount Spent (GH₵)</label>
+                        <input type="number" step="0.01" required placeholder="0.00" x-model="expenseForm.amount" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-hidden focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Notes (optional)</label>
+                        <input type="text" placeholder="Optional notes" x-model="expenseForm.notes" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-hidden focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="flex space-x-2 pt-2">
+                        <button type="submit" class="w-full py-3 bg-[#008080] text-white rounded-lg text-sm font-bold hover:bg-teal-800 transition-all cursor-pointer shadow-xs" x-text="editingExpenseId !== null ? 'Save Changes' : 'Log Expense'"></button>
+                        <button type="button" x-show="editingExpenseId !== null" @click="resetExpenseForm()" class="px-4 py-3 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="p-5 border-b border-slate-200 bg-slate-50/50 flex items-center justify-center"><h3 class="font-black text-lg text-[#b22222] serif-title">Recorded History Log</h3></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-[#008080] text-white uppercase text-xs font-bold tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-4">Date</th>
+                                <th class="p-4">Description</th>
+                                <th class="p-4">Category</th>
+                                <th class="p-4 text-right">Amount</th>
+                                <th class="p-4 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-medium">
+                            <template x-if="expenses.length === 0">
+                                <tr><td colSpan="5" class="p-8 text-center text-slate-400 font-normal">No expenses logged yet</td></tr>
+                            </template>
+                            <template x-for="(e, index) in expenses.slice(0, 10)" :key="index">
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-4 whitespace-nowrap" x-text="formatDisplayDate(e.date)"></td>
+                                    <td class="p-4 font-bold text-slate-900" x-text="e.description"></td>
+                                    <td class="p-4 text-slate-500" x-text="e.category"></td>
+                                    <td class="p-4 text-right font-mono font-bold text-rose-600">-GH₵ <span x-text="formatCurrency(e.amount)"></span></td>
+                                    <td class="p-4 text-center whitespace-nowrap space-x-3">
+                                        <button @click="startEditExpense(index)" class="text-xs text-blue-600 font-bold hover:underline cursor-pointer">Edit</button>
+                                        <button @click="deleteItem('expenses', index)" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">Delete</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'history'" class="space-y-5" style="display: none;">
+            <div class="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap gap-4 items-center justify-center">
+                <h3 class="text-2xl font-black text-[#b22222] serif-title w-full text-center mb-2">Transaction History</h3>
+                <div class="w-full md:w-72 relative">
+                    <input type="text" x-model="searchDesc" placeholder="🔍 Search description..." class="w-full pl-4 pr-3 py-2 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-hidden">
+                </div>
+                <select x-model="filterCategory" class="px-4 py-2 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:ring-2 focus:ring-teal-500 cursor-pointer outline-hidden font-medium text-slate-600">
+                    <option value="All">All Categories</option>
+                    <template x-for="cat in currentCategories()" :key="cat.name">
+                        <option :value="cat.name" x-text="cat.name"></option>
+                    </template>
+                </select>
+                <select x-model="filterYear" class="px-4 py-2 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:ring-2 focus:ring-teal-500 cursor-pointer outline-hidden font-medium text-slate-600">
+                    <option value="All">All Years</option>
+                    <template x-for="yr in getAvailableYears()" :key="yr">
+                        <option :value="yr" x-text="yr"></option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-[#008080] text-white uppercase text-xs font-bold tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-4">Date</th>
+                                <th class="p-4">Description</th>
+                                <th class="p-4">Category</th>
+                                <th class="p-4">Notes</th>
+                                <th class="p-4 text-right">Amount</th>
+                                <th class="p-4 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-medium">
+                            <template x-for="(e, index) in getFilteredExpenses()" :key="index">
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-4 whitespace-nowrap" x-text="formatDisplayDate(e.date)"></td>
+                                    <td class="p-4 font-bold text-slate-900" x-text="e.description"></td>
+                                    <td class="p-4 text-slate-600" x-text="e.category"></td>
+                                    <td class="p-4 text-slate-400 max-w-xs truncate" x-text="e.notes || '—'"></td>
+                                    <td class="p-4 text-right font-mono font-bold text-rose-600">-GH₵ <span x-text="formatCurrency(e.amount)"></span></td>
+                                    <td class="p-4 text-center whitespace-nowrap space-x-3">
+                                        <button @click="startEditExpense(index)" class="text-xs text-blue-600 font-bold hover:underline cursor-pointer">Edit</button>
+                                        <button @click="deleteItem('expenses', index)" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">Delete</button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr class="bg-slate-50 font-black border-t border-slate-200">
+                                <td colSpan="4" class="p-4 text-right text-xs uppercase tracking-wider text-slate-400">Total Filtered Output:</td>
+                                <td class="p-4 text-right font-mono text-base text-rose-600">-GH₵ <span x-text="formatCurrency(getFilteredTotal())"></span></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function budgetApp() {
+            return {
+                activeTab: 'dashboard',
+                selectedYear: '2026',
+                householdId: '',
+                copied: false,
+
+                // Legacy parameter template
+                categories2026: [
+                    { name: 'Housing & Utilities', annualBudget: 35040.00, includes: 'Rent, Light, Water, Gas, Garbage, Internet' },
+                    { name: 'Living Expenses', annualBudget: 24000.00, includes: 'Feeding & Transportation' },
+                    { name: 'Family & Personal', annualBudget: 12000.00, includes: "Wife's Bonus" },
+                    { name: 'Home & Leisure', annualBudget: 20000.00, includes: 'Home Upgrades, Items Purchases' },
+                    { name: 'Health & Safety', annualBudget: 10000.00, includes: 'Medical Costs, Health Insurance' },
+                    { name: 'Emergency & Misc', annualBudget: 6960.00, includes: 'Emergency Fund & Miscellaneous Buffer' },
+                ],
+
+                // Universal structural template for 2027 onwards
+                subsequentYearTemplate: [
+                    { name: 'Housing & Utilities', annualBudget: 34000.00, includes: 'Rent, Light, Water, Gas, Garbage, Internet' },
+                    { name: 'Living Expenses', annualBudget: 36000.00, includes: 'Feeding & Transportation' },
+                    { name: 'Emergency Fund', annualBudget: 10000.00, includes: 'Emergency Fund & Miscellaneous Buffer' },
+                    { name: 'Health & Safety', annualBudget: 10000.00, includes: 'Medical Costs, Health Insurance' },
+                    { name: 'Wife Bonus', annualBudget: 12000.00, includes: 'Dedicated Personal Semi-Annual Allotment' },
+                    { name: 'Husband Bonus', annualBudget: 32000.00, includes: 'Dedicated Personal Semi-Annual Allotment' }
+                ],
+
+                allotments: [],
+                expenses: [],
+                customYears: [], // Tracks user-created future years manually
+                stanbicBalance: 0,
+
+                searchDesc: '',
+                filterCategory: 'All',
+                filterYear: 'All',
+
+                editingAllotmentId: null,
+                editingExpenseId: null,
+                editingBank: false,
+                bankAmountInput: '',
+
+                allotmentForm: { date: '2026-06-13', category: '', amount: '', notes: '' },
+                expenseForm: { date: '2026-06-13', description: '', category: '', amount: '', notes: '' },
+
+                init() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    let id = urlParams.get('household');
+
+                    if (!id) {
+                        id = localStorage.getItem('family_household_id');
+                        if (!id) {
+                            id = 'fam-' + Math.random().toString(36).substr(2, 9);
+                        }
+                    }
+
+                    this.householdId = id;
+                    localStorage.setItem('family_household_id', id);
+                    window.history.replaceState({}, '', `${window.location.pathname}?household=${id}`);
+
+                    if (localStorage.getItem(`${id}_allotments`)) this.allotments = JSON.parse(localStorage.getItem(`${id}_allotments`));
+                    if (localStorage.getItem(`${id}_expenses`)) this.expenses = JSON.parse(localStorage.getItem(`${id}_expenses`));
+                    if (localStorage.getItem(`${id}_custom_years`)) this.customYears = JSON.parse(localStorage.getItem(`${id}_custom_years`));
+                    if (localStorage.getItem(`${id}_stanbic_balance`)) this.stanbicBalance = JSON.parse(localStorage.getItem(`${id}_stanbic_balance`));
+
+                    const currentYr = new Date().getFullYear().toString();
+                    this.selectedYear = this.getAvailableYears().includes(currentYr) ? currentYr : '2026';
+
+                    this.setDefaultFormCategories();
+
+                    window.addEventListener('storage', (e) => {
+                        if (e.key === `${this.householdId}_allotments` && e.newValue) this.allotments = JSON.parse(e.newValue);
+                        if (e.key === `${this.householdId}_expenses` && e.newValue) this.expenses = JSON.parse(e.newValue);
+                        if (e.key === `${this.householdId}_custom_years` && e.newValue) this.customYears = JSON.parse(e.newValue);
+                        if (e.key === `${this.householdId}_stanbic_balance` && e.newValue) this.stanbicBalance = JSON.parse(e.newValue);
+                    });
+
+                    this.$watch('selectedYear', value => {
+                        this.setDefaultFormCategories();
+                    });
+                },
+
+                // Creates an explicit user entry mechanism for future planning grids
+                createNewYear() {
+                    const yearInput = prompt("Enter the year you want to add (e.g. 2028, 2029):");
+                    if (!yearInput) return;
+                    
+                    const normalizedYear = yearInput.trim();
+                    if (!/^\d{4}$/.test(normalizedYear)) {
+                        alert("Please enter a valid 4-digit year value.");
+                        return;
+                    }
+
+                    if (this.getAvailableYears().includes(normalizedYear)) {
+                        alert("This year already exists in your configuration.");
+                        this.selectedYear = normalizedYear;
+                        return;
+                    }
+
+                    this.customYears.push(normalizedYear);
+                    this.saveToDisk('custom_years', this.customYears);
+                    this.selectedYear = normalizedYear;
+                },
+
+                // Gathers explicit default baseline structures + active data ranges + manual custom configurations
+                getAvailableYears() {
+                    const baselineYears = ['2026', '2027'];
+                    const dataYears = [];
+                    
+                    this.allotments.forEach(a => { if(a.date) dataYears.push(a.date.split('-')[0]); });
+                    this.expenses.forEach(e => { if(e.date) dataYears.push(e.date.split('-')[0]); });
+
+                    const outputYears = [...new Set([...baselineYears, ...dataYears, ...this.customYears])];
+                    return outputYears.sort((a, b) => parseInt(a) - parseInt(b));
+                },
+
+                currentCategories() {
+                    return this.selectedYear === '2026' ? this.categories2026 : this.subsequentYearTemplate;
+                },
+
+                setDefaultFormCategories() {
+                    const categories = this.currentCategories();
+                    if (categories && categories.length > 0) {
+                        const firstCat = categories[0].name;
+                        this.allotmentForm.category = firstCat;
+                        this.expenseForm.category = firstCat;
+                    }
+                },
+
+                saveToDisk(key, data) {
+                    localStorage.setItem(`${this.householdId}_${key}`, JSON.stringify(data));
+                },
+
+                formatCurrency(num) {
+                    return parseFloat(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                },
+
+                formatDisplayDate(dateStr) {
+                    if (!dateStr) return '';
+                    const parts = dateStr.split('-');
+                    if (parts.length !== 3) return dateStr;
+                    return `${parts[2]} / ${parts[1]} / ${parts[0]}`;
+                },
+
+                copySyncLink() {
+                    const link = `${window.location.origin}${window.location.pathname}?household=${this.householdId}`;
+                    navigator.clipboard.writeText(link);
+                    this.copied = true;
+                    setTimeout(() => this.copied = false, 2500);
+                },
+
+                getCategoryMetrics(categoryName) {
+                    const yearStr = this.selectedYear;
+                    const catAllot = this.allotments.filter(a => a.category === categoryName && a.date.startsWith(yearStr));
+                    const catExp = this.expenses.filter(e => e.category === categoryName && e.date.startsWith(yearStr));
+
+                    const given = catAllot.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
+                    const spent = catExp.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+                    return { given, spent, remaining: given - spent };
+                },
+
+                getTotalBudget() { return this.currentCategories().reduce((s, c) => s + c.annualBudget, 0); },
+                getTotalGiven() { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).given, 0); },
+                getTotalSpent() { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).spent, 0); },
+                getTotalRemaining() { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).remaining, 0); },
+
+                saveAllotment() {
+                    if (this.editingAllotmentId !== null) {
+                        this.allotments[this.editingAllotmentId] = { ...this.allotmentForm, amount: parseFloat(this.allotmentForm.amount) };
+                    } else {
+                        this.allotments.unshift({ ...this.allotmentForm, amount: parseFloat(this.allotmentForm.amount) });
+                    }
+                    this.saveToDisk('allotments', this.allotments);
+                    this.resetAllotmentForm();
+                },
+
+                startEditAllotment(index) {
+                    this.editingAllotmentId = index;
+                    const item = this.allotments[index];
+                    this.allotmentForm = { date: item.date, category: item.category, amount: item.amount, notes: item.notes || '' };
+                },
+
+                resetAllotmentForm() {
+                    this.editingAllotmentId = null;
+                    const currentYr = new Date().getFullYear().toString();
+                    this.allotmentForm = { date: `${currentYr}-06-13`, category: this.currentCategories()[0].name, amount: '', notes: '' };
+                },
+
+                saveExpense() {
+                    if (this.editingExpenseId !== null) {
+                        this.expenses[this.editingExpenseId] = { ...this.expenseForm, amount: parseFloat(this.expenseForm.amount) };
+                    } else {
+                        this.expenses.unshift({ ...this.expenseForm, amount: parseFloat(this.expenseForm.amount) });
+                    }
+                    this.saveToDisk('expenses', this.expenses);
+                    this.resetExpenseForm();
+                },
+
+                startEditExpense(index) {
+                    this.editingExpenseId = index;
+                    const item = this.expenses[index];
+                    this.expenseForm = { date: item.date, description: item.description, category: item.category, amount: item.amount, notes: item.notes || '' };
+                    this.activeTab = 'expenses';
+                },
+
+                resetExpenseForm() {
+                    this.editingExpenseId = null;
+                    const currentYr = new Date().getFullYear().toString();
+                    this.expenseForm = { date: `${currentYr}-06-13`, description: '', category: this.currentCategories()[0].name, amount: '', notes: '' };
+                },
+
+                updateBankBalance() {
+                    if (this.bankAmountInput === '') return;
+                    this.stanbicBalance = parseFloat(this.bankAmountInput);
+                    this.saveToDisk('stanbic_balance', this.stanbicBalance);
+                    this.editingBank = false;
+                    this.bankAmountInput = '';
+                },
+
+                deleteItem(type, index) {
+                    if (confirm("Are you sure you want to permanently delete this record?")) {
+                        if (type === 'allotments') {
+                            this.allotments.splice(index, 1);
+                            this.saveToDisk('allotments', this.allotments);
+                        } else {
+                            this.expenses.splice(index, 1);
+                            this.saveToDisk('expenses', this.expenses);
+                        }
+                    }
+                },
+
+                getFilteredExpenses() {
+                    return this.expenses.filter(e => {
+                        const matchesSearch = e.description.toLowerCase().includes(this.searchDesc.toLowerCase());
+                        const matchesCategory = this.filterCategory === 'All' || e.category === this.filterCategory;
+                        const matchesYear = this.filterYear === 'All' || e.date.startsWith(this.filterYear);
+                        return matchesSearch && matchesCategory && matchesYear;
+                    });
+                },
+
+                getFilteredTotal() {
+                    return this.getFilteredExpenses().reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
