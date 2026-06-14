@@ -57,17 +57,8 @@
         <div x-show="activeTab === 'dashboard'" class="space-y-8">
             <div class="max-w-md bg-white p-6 rounded-2xl border border-slate-200 shadow-xs relative group">
                 <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Stanbic Joint Account Balance</p>
-                <p class="text-3xl font-black text-slate-900 mt-1">GH₵ <span x-text="formatCurrency(stanbicBalance)"></span></p>
-                <button @click="editingBank = true; bankAmountInput = stanbicBalance" class="absolute top-6 right-6 text-xs text-[#008080] font-bold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer underline">Adjust Balance</button>
-            </div>
-
-            <div x-show="editingBank" class="p-4 bg-teal-50/50 border border-teal-100 rounded-xl flex items-center max-w-xl">
-                <div class="flex items-center space-x-4 w-full">
-                    <span class="text-sm font-bold text-teal-900">Update Balance:</span>
-                    <input type="number" step="0.01" x-model="bankAmountInput" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white outline-hidden" placeholder="GH₵ 0.00">
-                    <button @click="updateBankBalance()" class="px-4 py-1.5 bg-[#008080] text-white rounded-lg text-sm font-bold hover:bg-teal-800 cursor-pointer">Update</button>
-                    <button @click="editingBank = false" class="text-sm text-slate-500 font-medium hover:underline cursor-pointer">Cancel</button>
-                </div>
+                <p class="text-3xl font-black text-slate-900 mt-1">GH₵ <span x-text="formatCurrency(getTotalRemaining())"></span></p>
+                <p class="text-xs text-slate-400 mt-1">Total allotments minus total expenses for <span x-text="selectedYear"></span></p>
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
