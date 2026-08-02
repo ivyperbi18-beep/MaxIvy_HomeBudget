@@ -33,7 +33,16 @@
                 </nav>
             </div>
 
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
+                <!-- Backup & Restore Buttons -->
+                <button @click="exportBackup()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 transition-all flex items-center gap-1 cursor-pointer">
+                    📥 Backup
+                </button>
+                <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 transition-all flex items-center gap-1 cursor-pointer">
+                    📤 Restore
+                    <input type="file" accept=".json" @change="importBackup($event)" class="hidden">
+                </label>
+                <div class="h-4 w-px bg-slate-200"></div>
                 <!-- Live sync indicator -->
                 <div class="flex items-center gap-1.5 text-xs font-semibold"
                      :class="syncStatus === 'live' ? 'text-emerald-600' : syncStatus === 'saving' ? 'text-teal-500' : 'text-slate-400'">
@@ -95,7 +104,26 @@
                                         <div class="font-bold text-[#008080] text-base" x-text="cat.name"></div>
                                         <div class="text-xs text-slate-400 font-normal mt-0.5" x-text="cat.includes"></div>
                                     </td>
-                                    <td class="p-4 text-right font-mono text-slate-600">GH₵ <span x-text="formatCurrency(cat.annualBudget)"></span></td>
+                                    
+                                    <!-- Editable Target Budget Field -->
+                                    <td class="p-4 text-right font-mono text-slate-600">
+                                        <div x-data="{ editing: false, tempVal: cat.annualBudget }" class="flex items-center justify-end gap-2">
+                                            <template x-if="!editing">
+                                                <div class="group/edit flex items-center justify-end gap-1.5 cursor-pointer" @click="editing = true; tempVal = cat.annualBudget">
+                                                    <span>GH₵ <span x-text="formatCurrency(cat.annualBudget)"></span></span>
+                                                    <span class="text-[10px] text-blue-600 font-sans font-bold opacity-0 group-hover/edit:opacity-100 transition-opacity">Edit</span>
+                                                </div>
+                                            </template>
+                                            <template x-if="editing">
+                                                <div class="flex items-center gap-1">
+                                                    <input type="number" step="0.01" class="w-24 px-1.5 py-0.5 border border-teal-500 rounded text-right font-mono text-xs outline-none" x-model="tempVal" @keydown.enter="updateTargetBudget(cat.name, tempVal); editing = false">
+                                                    <button @click="updateTargetBudget(cat.name, tempVal); editing = false" class="text-xs text-emerald-600 font-bold px-1 hover:underline">✓</button>
+                                                    <button @click="editing = false" class="text-xs text-slate-400 font-bold px-1 hover:underline">✕</button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </td>
+
                                     <td class="p-4 text-right font-mono text-emerald-600 font-bold">GH₵ <span x-text="formatCurrency(getCategoryMetrics(cat.name).given)"></span></td>
                                     <td class="p-4 text-right font-mono text-amber-600 font-bold">GH₵ <span x-text="formatCurrency(getCategoryMetrics(cat.name).spent)"></span></td>
                                     <td class="p-4 text-right font-mono font-black"
@@ -351,9 +379,6 @@
     const db    = getFirestore(fbApp);
 
     // ── Firestore paths ────────────────────────────────────────────
-    // households/{householdId}/allotments/{docId}
-    // households/{householdId}/expenses/{docId}
-    // households/{householdId}/meta/data
     const allotmentsCol = hid => collection(db, 'households', hid, 'allotments');
     const expensesCol   = hid => collection(db, 'households', hid, 'expenses');
     const metaDocRef    = hid => doc(db, 'households', hid, 'meta', 'data');
@@ -385,6 +410,7 @@
             { name: 'Husband Bonus',       annualBudget: 32000.00, includes: 'Dedicated Personal Semi-Annual Allotment' },
         ],
 
+        customBudgets: {}, // { "2026_Housing & Utilities": 36000 }
         allotments:     [],
         expenses:       [],
         customYears:    [],
@@ -396,8 +422,6 @@
 
         editingAllotmentId: null,
         editingExpenseId:   null,
-        editingBank:        false,
-        bankAmountInput:    '',
 
         allotmentForm: { date: '', category: '', amount: '', notes: '' },
         expenseForm:   { date: '', description: '', category: '', amount: '', notes: '' },
@@ -420,7 +444,6 @@
             this.setDefaultFormCategories();
             this.$watch('selectedYear', () => this.setDefaultFormCategories());
 
-            // Start all three real-time listeners on page load
             this._listenAllotments();
             this._listenExpenses();
             this._listenMeta();
@@ -430,9 +453,6 @@
             this._unsubs.forEach(u => u());
         },
 
-        // ── onSnapshot: allotments ─────────────────────────────────
-        // Fires on load and again instantly whenever any device
-        // adds, edits, or deletes an allotment in Firestore.
         _listenAllotments() {
             const unsub = onSnapshot(
                 allotmentsCol(this.householdId),
@@ -446,9 +466,6 @@
             this._unsubs.push(unsub);
         },
 
-        // ── onSnapshot: expenses ───────────────────────────────────
-        // Fires on load and again instantly whenever any device
-        // adds, edits, or deletes an expense in Firestore.
         _listenExpenses() {
             const unsub = onSnapshot(
                 expensesCol(this.householdId),
@@ -462,9 +479,6 @@
             this._unsubs.push(unsub);
         },
 
-        // ── onSnapshot: meta (bank balance + custom years) ─────────
-        // Fires on load and again instantly whenever any device
-        // updates the Stanbic balance or adds a new year.
         _listenMeta() {
             const unsub = onSnapshot(
                 metaDocRef(this.householdId),
@@ -473,6 +487,7 @@
                         const d = snap.data();
                         this.stanbicBalance = d.stanbicBalance ?? 0;
                         this.customYears    = d.customYears    ?? [];
+                        this.customBudgets  = d.customBudgets  ?? {};
                     }
                     this.syncStatus = 'live';
                 }
@@ -480,15 +495,109 @@
             this._unsubs.push(unsub);
         },
 
-        // ── Save meta doc ──────────────────────────────────────────
         async _saveMeta() {
             this.syncStatus = 'saving';
             await setDoc(metaDocRef(this.householdId), {
                 stanbicBalance: this.stanbicBalance,
                 customYears:    this.customYears,
+                customBudgets:  this.customBudgets,
                 updatedAt:      serverTimestamp(),
             }, { merge: true });
-            // _listenMeta's onSnapshot will fire and update all open screens automatically
+        },
+
+        // ── Backup and Restore ──────────────────────────────────────
+        exportBackup() {
+            const backupData = {
+                version: 1,
+                timestamp: new Date().toISOString(),
+                householdId: this.householdId,
+                customYears: this.customYears,
+                customBudgets: this.customBudgets,
+                stanbicBalance: this.stanbicBalance,
+                allotments: this.allotments,
+                expenses: this.expenses
+            };
+
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `family-budget-backup-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        },
+
+        async importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.allotments || !data.expenses) {
+                        alert('Invalid backup file format.');
+                        return;
+                    }
+
+                    if (!confirm('Restoring this backup will replace current budget data for this household. Continue?')) {
+                        return;
+                    }
+
+                    this.syncStatus = 'saving';
+
+                    // 1. Clear old allotments & expenses
+                    for (const a of this.allotments) {
+                        await deleteDoc(doc(db, 'households', this.householdId, 'allotments', a.id));
+                    }
+                    for (const ex of this.expenses) {
+                        await deleteDoc(doc(db, 'households', this.householdId, 'expenses', ex.id));
+                    }
+
+                    // 2. Add restored items
+                    for (const a of data.allotments) {
+                        const { id, ...cleanA } = a;
+                        await addDoc(allotmentsCol(this.householdId), cleanA);
+                    }
+                    for (const ex of data.expenses) {
+                        const { id, ...cleanEx } = ex;
+                        await addDoc(expensesCol(this.householdId), cleanEx);
+                    }
+
+                    // 3. Update metadata
+                    this.customYears = data.customYears || [];
+                    this.customBudgets = data.customBudgets || {};
+                    this.stanbicBalance = data.stanbicBalance || 0;
+                    await this._saveMeta();
+
+                    alert('Backup restored successfully!');
+                } catch (err) {
+                    console.error(err);
+                    alert('Failed to read or import backup file.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
+        },
+
+        // ── Target Budget Editing ───────────────────────────────────
+        updateTargetBudget(catName, newBudget) {
+            const val = parseFloat(newBudget);
+            if (isNaN(val) || val < 0) return;
+            const key = `${this.selectedYear}_${catName}`;
+            this.customBudgets[key] = val;
+            this._saveMeta();
+        },
+
+        currentCategories() {
+            const base = this.selectedYear === '2026' ? this.categories2026 : this.subsequentYearTemplate;
+            return base.map(c => {
+                const key = `${this.selectedYear}_${c.name}`;
+                return {
+                    ...c,
+                    annualBudget: this.customBudgets[key] !== undefined ? this.customBudgets[key] : c.annualBudget
+                };
+            });
         },
 
         // ── Year management ────────────────────────────────────────
@@ -508,10 +617,6 @@
             this.customYears.push(yr);
             this.selectedYear = yr;
             this._saveMeta();
-        },
-
-        currentCategories() {
-            return this.selectedYear === '2026' ? this.categories2026 : this.subsequentYearTemplate;
         },
 
         setDefaultFormCategories() {
@@ -564,7 +669,6 @@
                 await addDoc(allotmentsCol(this.householdId),
                     { ...item, createdAt: serverTimestamp() });
             }
-            // onSnapshot fires automatically on all open screens — no manual array update needed
             this.resetAllotmentForm();
         },
 
@@ -583,7 +687,6 @@
             if (!confirm('Delete this allotment?')) return;
             this.syncStatus = 'saving';
             await deleteDoc(doc(db, 'households', this.householdId, 'allotments', id));
-            // onSnapshot fires automatically on all open screens — no manual splice needed
         },
 
         // ── Expense CRUD ───────────────────────────────────────────
@@ -598,7 +701,6 @@
                 await addDoc(expensesCol(this.householdId),
                     { ...item, createdAt: serverTimestamp() });
             }
-            // onSnapshot fires automatically on all open screens — no manual array update needed
             this.resetExpenseForm();
         },
 
@@ -618,21 +720,10 @@
             if (!confirm('Delete this transaction?')) return;
             this.syncStatus = 'saving';
             await deleteDoc(doc(db, 'households', this.householdId, 'expenses', id));
-            // onSnapshot fires automatically on all open screens — no manual splice needed
         },
 
         getExpenseIndexById(id) {
             return this.expenses.findIndex(e => e.id === id);
-        },
-
-        // ── Bank balance ───────────────────────────────────────────
-        async updateBankBalance() {
-            if (this.bankAmountInput === '') return;
-            this.stanbicBalance  = parseFloat(this.bankAmountInput);
-            this.editingBank     = false;
-            this.bankAmountInput = '';
-            await this._saveMeta();
-            // _listenMeta's onSnapshot fires and updates balance on all open screens instantly
         },
 
         // ── History filters ────────────────────────────────────────
