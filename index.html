@@ -1,930 +1,722 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Budget Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .serif-title { font-family: 'Playfair Display', Georgia, serif; }
-        [x-cloak] { display: none !important; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 antialiased selection:bg-teal-500 selection:text-white" x-data="budgetApp" x-cloak>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Budget - Stanbic Joint Account Hub</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- ── HEADER / NAVIGATION ── -->
-    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-black text-xl shadow-xs">
-                    🏡
-                </div>
-                <div>
-                    <h1 class="text-xl font-black tracking-tight text-slate-900 serif-title">FAMILY BUDGET</h1>
-                    <p class="text-[11px] font-semibold text-slate-400 tracking-wider uppercase">Stanbic Joint Account Hub</p>
-                </div>
-            </div>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
+    }
+    [x-cloak] { display: none !important; }
+  </style>
 
-            <nav class="flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/60">
-                <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'" class="px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2">
-                    📊 <span>Overview</span>
-                </button>
-                <button x-show="selectedYear !== '2026'" @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'" class="px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2">
-                    📅 <span>Monthly Tracker</span>
-                </button>
-                <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'" class="px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2">
-                    ➕ <span>Allotments</span>
-                </button>
-                <button @click="activeTab = 'expenses'" :class="activeTab === 'expenses' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'" class="px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2">
-                    💸 <span>Transactions</span>
-                </button>
-            </nav>
-        </div>
-    </header>
+  <!-- Firebase Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      setDoc, 
+      addDoc, 
+      deleteDoc, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-
-        <!-- ── GLOBAL YEAR & SUMMARY HEADER ── -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-6">
-            <div class="flex items-center gap-4">
-                <div class="space-y-1">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Selected Budgeting Period</span>
-                    <div class="flex items-center gap-3">
-                        <select x-model="selectedYear" class="bg-slate-100 border border-slate-200 rounded-xl text-lg font-black text-slate-800 py-1.5 px-4 cursor-pointer outline-none focus:ring-2 focus:ring-teal-500">
-                            <template x-for="yr in getAvailableYears()" :key="yr">
-                                <option :value="yr" x-text="yr"></option>
-                            </template>
-                        </select>
-                        <button @click="createNewYear()" class="bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
-                            ➕ Add Year
-                        </button>
-                    </div>
-                </div>
-                <div class="h-10 w-px bg-slate-200 hidden sm:block"></div>
-                <div class="hidden sm:block">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Allocation Strategy</span>
-                    <p class="text-sm font-bold text-slate-700 mt-0.5" x-text="selectedYear === '2026' ? 'Annual Lump-Sum Allotment (Jan/Jun)' : 'Monthly Fixed Allocation Strategy'"></p>
-                </div>
-            </div>
-
-            <!-- STANBIC BALANCE CARD -->
-            <div class="bg-slate-900 text-white p-4 px-6 rounded-2xl flex items-center gap-6 shadow-sm">
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Stanbic Joint Account Balance</p>
-                    <p class="text-2xl font-black tracking-tight text-emerald-400 mt-0.5 font-mono">GH₵ <span x-text="formatCurrency(getTotalRemaining())"></span></p>
-                </div>
-                <div class="text-right border-l border-slate-800 pl-6 hidden md:block">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Money Given</p>
-                    <p class="text-sm font-bold text-slate-200 font-mono">GH₵ <span x-text="formatCurrency(getTotalGiven())"></span></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── TAB 1: OVERVIEW & CATEGORY MANAGEMENT ── -->
-        <div x-show="activeTab === 'dashboard'" class="space-y-8">
-            <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                    <div>
-                        <h3 class="font-black text-slate-800 text-base uppercase tracking-wider">Main Category Matrix (<span x-text="selectedYear"></span>)</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Edit targets, manage category details, and monitor current status</p>
-                    </div>
-                    <button @click="showAddCategoryModal = true" class="bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5">
-                        ➕ New Category
-                    </button>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-100/80 text-slate-600 font-bold text-xs uppercase tracking-wider border-b border-slate-200/60">
-                                <th class="p-4 w-1/3">Category & Scope</th>
-                                <th class="p-4 text-right">Annual Target</th>
-                                <th class="p-4 text-right" x-show="selectedYear !== '2026'">Monthly Target</th>
-                                <th class="p-4 text-right">Money Given</th>
-                                <th class="p-4 text-right">Money Spent</th>
-                                <th class="p-4 text-right">Remaining</th>
-                                <th class="p-4 text-center">Manage</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-sm font-medium">
-                            <template x-for="(cat, idx) in currentCategories()" :key="cat.name">
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="p-4">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-bold text-slate-900 text-base" x-text="cat.name"></span>
-                                            <template x-if="cat.isAnnualOnly">
-                                                <span class="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-200">Annual Lump-sum</span>
-                                            </template>
-                                        </div>
-                                        <div class="text-xs text-slate-400 font-normal mt-0.5" x-text="cat.includes || 'No details provided'"></div>
-                                    </td>
-                                    
-                                    <!-- Editable Target Budget Field -->
-                                    <td class="p-4 text-right font-mono text-slate-700">
-                                        <div x-data="{ editing: false, tempVal: cat.annualBudget }" class="flex items-center justify-end gap-2">
-                                            <template x-if="!editing">
-                                                <div class="group/edit flex items-center justify-end gap-1.5 cursor-pointer" @click="editing = true; tempVal = cat.annualBudget">
-                                                    <span>GH₵ <span x-text="formatCurrency(cat.annualBudget)"></span></span>
-                                                    <span class="text-[10px] text-teal-600 font-sans font-bold opacity-0 group-hover/edit:opacity-100 transition-opacity">✏️</span>
-                                                </div>
-                                            </template>
-                                            <template x-if="editing">
-                                                <div class="flex items-center gap-1">
-                                                    <input type="number" step="0.01" class="w-24 px-2 py-1 border border-teal-500 rounded-lg text-right font-mono text-xs outline-none focus:ring-2 focus:ring-teal-500" x-model="tempVal" @keydown.enter="updateTargetBudget(cat.name, tempVal); editing = false">
-                                                    <button @click="updateTargetBudget(cat.name, tempVal); editing = false" class="text-xs text-emerald-600 font-bold px-1 hover:underline">✓</button>
-                                                    <button @click="editing = false" class="text-xs text-slate-400 font-bold px-1 hover:underline">✕</button>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </td>
-
-                                    <!-- Monthly Target Calculation for 2027+ -->
-                                    <td class="p-4 text-right font-mono text-slate-500 text-xs" x-show="selectedYear !== '2026'">
-                                        <span x-text="cat.isAnnualOnly ? 'N/A (Lump-sum)' : 'GH₵ ' + formatCurrency(cat.annualBudget / 12) + '/mo'"></span>
-                                    </td>
-
-                                    <td class="p-4 text-right font-mono text-emerald-600 font-bold">GH₵ <span x-text="formatCurrency(getCategoryMetrics(cat.name).given)"></span></td>
-                                    <td class="p-4 text-right font-mono text-amber-600 font-bold">GH₵ <span x-text="formatCurrency(getCategoryMetrics(cat.name).spent)"></span></td>
-                                    <td class="p-4 text-right font-mono font-black"
-                                        :class="getCategoryMetrics(cat.name).remaining >= 0 ? 'text-slate-900' : 'text-rose-600'">
-                                        GH₵ <span x-text="formatCurrency(getCategoryMetrics(cat.name).remaining)"></span>
-                                    </td>
-                                    <td class="p-4 text-center">
-                                        <button @click="openEditCategoryModal(cat)" class="text-slate-400 hover:text-teal-600 transition-colors p-1 text-xs font-bold" title="Edit Category Info">
-                                            ✏️ Edit
-                                        </button>
-                                    </td>
-                                </tr>
-                            </template>
-                            <tr class="bg-slate-900 text-white font-bold border-t-2 border-slate-800">
-                                <td class="p-4">
-                                    <div class="text-white font-black text-base serif-title">Grand Total</div>
-                                    <div class="text-xs text-slate-400 font-normal">All Budget Categories (<span x-text="selectedYear"></span>)</div>
-                                </td>
-                                <td class="p-4 text-right font-mono text-emerald-400">GH₵ <span x-text="formatCurrency(getTotalBudget())"></span></td>
-                                <td class="p-4 text-right font-mono text-slate-400 text-xs" x-show="selectedYear !== '2026'">—</td>
-                                <td class="p-4 text-right font-mono text-emerald-400">GH₵ <span x-text="formatCurrency(getTotalGiven())"></span></td>
-                                <td class="p-4 text-right font-mono text-amber-400">GH₵ <span x-text="formatCurrency(getTotalSpent())"></span></td>
-                                <td class="p-4 text-right font-mono text-base font-black text-teal-300">GH₵ <span x-text="formatCurrency(getTotalRemaining())"></span></td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── TAB 2: 2027+ MONTHLY BUDGET DASHBOARD ── -->
-        <div x-show="activeTab === 'monthly' && selectedYear !== '2026'" class="space-y-8">
-            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <h3 class="text-lg font-black text-slate-900 serif-title">Monthly Allocation vs Expense Dashboard</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Track fixed monthly allocations against actual monthly spending for <span x-text="selectedYear"></span></p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Month:</label>
-                    <select x-model="selectedMonth" class="bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 py-1.5 px-3 cursor-pointer outline-none focus:ring-2 focus:ring-teal-500">
-                        <template x-for="(m, idx) in monthsList" :key="idx">
-                            <option :value="idx + 1" x-text="m"></option>
-                        </template>
-                    </select>
-                </div>
-            </div>
-
-            <!-- MONTHLY PERFORMANCE MATRIX -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-                <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                    <h4 class="font-black text-slate-800 text-sm uppercase tracking-wider">
-                        Performance for <span x-text="monthsList[selectedMonth - 1]"></span> <span x-text="selectedYear"></span>
-                    </h4>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-400">Month Budget Target:</span>
-                        <span class="font-mono font-bold text-teal-700 text-sm">GH₵ <span x-text="formatCurrency(getMonthlyTargetTotal())"></span></span>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm border-collapse">
-                        <thead>
-                            <tr class="bg-slate-100/80 text-slate-600 font-bold text-xs uppercase tracking-wider border-b border-slate-200/60">
-                                <th class="p-4">Category</th>
-                                <th class="p-4 text-right">Fixed Monthly Target</th>
-                                <th class="p-4 text-right">Actual Spent (This Month)</th>
-                                <th class="p-4 text-right">Variance</th>
-                                <th class="p-4 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 font-medium">
-                            <template x-for="cat in currentCategories()" :key="cat.name">
-                                <tr class="hover:bg-slate-50/60">
-                                    <td class="p-4">
-                                        <div class="font-bold text-slate-800" x-text="cat.name"></div>
-                                        <template x-if="cat.isAnnualOnly">
-                                            <span class="text-[10px] text-amber-700 font-bold">Annual Single Payment Item</span>
-                                        </template>
-                                    </td>
-                                    <td class="p-4 text-right font-mono text-slate-600">
-                                        <span x-text="cat.isAnnualOnly ? 'N/A' : 'GH₵ ' + formatCurrency(cat.annualBudget / 12)"></span>
-                                    </td>
-                                    <td class="p-4 text-right font-mono font-bold text-slate-800">
-                                        GH₵ <span x-text="formatCurrency(getMonthlyCategorySpent(cat.name, selectedMonth))"></span>
-                                    </td>
-                                    <td class="p-4 text-right font-mono font-bold"
-                                        :class="getMonthlyCategoryVariance(cat, selectedMonth) >= 0 ? 'text-emerald-600' : 'text-rose-600'">
-                                        <span x-text="cat.isAnnualOnly ? '—' : (getMonthlyCategoryVariance(cat, selectedMonth) >= 0 ? '+' : '') + 'GH₵ ' + formatCurrency(getMonthlyCategoryVariance(cat, selectedMonth))"></span>
-                                    </td>
-                                    <td class="p-4 text-center">
-                                        <template x-if="cat.isAnnualOnly">
-                                            <span class="inline-block px-3 py-1 bg-slate-100 text-slate-600 font-bold text-[10px] rounded-full">Annual Item</span>
-                                        </template>
-                                        <template x-if="!cat.isAnnualOnly">
-                                            <span :class="getMonthlyCategorySpent(cat.name, selectedMonth) <= (cat.annualBudget / 12) ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-rose-100 text-rose-800 border-rose-200'" class="inline-block px-3 py-1 font-extrabold text-[10px] rounded-full border">
-                                                <span x-text="getMonthlyCategorySpent(cat.name, selectedMonth) <= (cat.annualBudget / 12) ? 'In Budget' : 'Over Budget'"></span>
-                                            </span>
-                                        </template>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── TAB 3: ALLOTMENTS ── -->
-        <div x-show="activeTab === 'allotments'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs h-fit">
-                <h3 class="text-lg font-black text-slate-900 serif-title mb-6" x-text="editingAllotmentId !== null ? '✍️ Edit Allotment' : '➕ Add Budget Allotment'"></h3>
-                <form @submit.prevent="saveAllotment()" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
-                        <input type="date" required x-model="allotmentForm.date" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Category Target</label>
-                        <select x-model="allotmentForm.category" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer">
-                            <template x-for="cat in currentCategories()" :key="cat.name">
-                                <option :value="cat.name" x-text="cat.name"></option>
-                            </template>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Amount (GH₵)</label>
-                        <input type="number" step="0.01" required placeholder="0.00" x-model="allotmentForm.amount" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Notes (optional)</label>
-                        <input type="text" placeholder="e.g. Monthly allocation" x-model="allotmentForm.notes" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500">
-                    </div>
-                    <div class="flex space-x-2 pt-2">
-                        <button type="submit" class="w-full py-3 bg-teal-700 text-white rounded-xl text-xs font-bold hover:bg-teal-800 transition-all cursor-pointer shadow-xs" x-text="editingAllotmentId !== null ? 'Save Changes' : 'Save Allotment'"></button>
-                        <button type="button" x-show="editingAllotmentId !== null" @click="resetAllotmentForm()" class="px-4 py-3 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 cursor-pointer">Cancel</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-                <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                    <h3 class="font-black text-sm uppercase tracking-wider text-slate-800">Allotment History (<span x-text="selectedYear"></span>)</h3>
-                    <span class="text-xs font-bold text-slate-400" x-text="getYearAllotments().length + ' entries'"></span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-100/80 text-slate-600 uppercase text-xs font-bold tracking-wider border-b border-slate-200/60">
-                            <tr>
-                                <th class="p-4">Date</th>
-                                <th class="p-4">Category</th>
-                                <th class="p-4 text-right">Amount</th>
-                                <th class="p-4">Notes</th>
-                                <th class="p-4 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 font-medium">
-                            <template x-if="getYearAllotments().length === 0">
-                                <tr><td colspan="5" class="p-8 text-center text-slate-400 font-normal">No allotments recorded for <span x-text="selectedYear"></span></td></tr>
-                            </template>
-                            <template x-for="a in getYearAllotments()" :key="a.id">
-                                <tr class="hover:bg-slate-50/60">
-                                    <td class="p-4 whitespace-nowrap text-slate-600" x-text="formatDisplayDate(a.date)"></td>
-                                    <td class="p-4 text-teal-700 font-bold" x-text="a.category"></td>
-                                    <td class="p-4 text-right font-mono font-bold text-slate-900">GH₵ <span x-text="formatCurrency(a.amount)"></span></td>
-                                    <td class="p-4 text-slate-400 max-w-xs truncate text-xs" x-text="a.notes || '—'"></td>
-                                    <td class="p-4 text-center whitespace-nowrap space-x-3">
-                                        <button @click="startEditAllotmentById(a.id)" class="text-xs text-blue-600 font-bold hover:underline cursor-pointer">Edit</button>
-                                        <button @click="deleteAllotment(a.id)" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">Delete</button>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── TAB 4: TRANSACTIONS & LOGGING ── -->
-        <div x-show="activeTab === 'expenses'" class="space-y-8">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Entry Form -->
-                <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs h-fit">
-                    <h3 class="text-lg font-black text-slate-900 serif-title mb-6" x-text="editingExpenseId !== null ? '✍️ Edit Expense' : '💸 Log Spent Transaction'"></h3>
-                    <form @submit.prevent="saveExpense()" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
-                            <input type="date" required x-model="expenseForm.date" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description</label>
-                            <input type="text" required placeholder="e.g. Light bill, Groceries" x-model="expenseForm.description" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Category</label>
-                            <select x-model="expenseForm.category" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer">
-                                <template x-for="cat in currentCategories()" :key="cat.name">
-                                    <option :value="cat.name" x-text="cat.name"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Amount Spent (GH₵)</label>
-                            <input type="number" step="0.01" required placeholder="0.00" x-model="expenseForm.amount" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Notes (optional)</label>
-                            <input type="text" placeholder="Optional details" x-model="expenseForm.notes" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500">
-                        </div>
-                        <div class="flex space-x-2 pt-2">
-                            <button type="submit" class="w-full py-3 bg-teal-700 text-white rounded-xl text-xs font-bold hover:bg-teal-800 transition-all cursor-pointer shadow-xs" x-text="editingExpenseId !== null ? 'Save Changes' : 'Log Expense'"></button>
-                            <button type="button" x-show="editingExpenseId !== null" @click="resetExpenseForm()" class="px-4 py-3 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 cursor-pointer">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Stats Summary Panel -->
-                <div class="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                            <div>
-                                <h3 class="text-base font-black text-slate-900 uppercase tracking-wider">Year Summary (<span x-text="selectedYear"></span>)</h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Quick transaction metrics for the active year</p>
-                            </div>
-                            <span class="bg-teal-50 text-teal-700 font-bold text-xs px-3 py-1 rounded-full border border-teal-200" x-text="selectedYear"></span>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
-                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Spent</span>
-                                <p class="text-2xl font-black text-rose-600 mt-1 font-mono">GH₵ <span x-text="formatCurrency(getTotalSpent())"></span></p>
-                            </div>
-
-                            <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
-                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Money Given</span>
-                                <p class="text-2xl font-black text-emerald-600 mt-1 font-mono">GH₵ <span x-text="formatCurrency(getTotalGiven())"></span></p>
-                            </div>
-
-                            <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
-                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Transactions Logged</span>
-                                <p class="text-2xl font-black text-slate-800 mt-1 font-mono"><span x-text="getYearExpenses().length"></span> <span class="text-xs font-semibold text-slate-400">entries</span></p>
-                            </div>
-
-                            <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
-                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Balance</span>
-                                <p class="text-2xl font-black text-teal-800 mt-1 font-mono">GH₵ <span x-text="formatCurrency(getTotalRemaining())"></span></p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-400 flex items-center justify-between">
-                        <span>💡 Dynamic sync with cloud database active.</span>
-                        <span class="font-bold text-slate-600">Family Budget Hub</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Transaction History Table -->
-            <div class="space-y-4">
-                <div class="p-5 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-wrap gap-4 items-center justify-between">
-                    <div>
-                        <h3 class="text-base font-black text-slate-900 uppercase tracking-wider">Transaction History</h3>
-                        <p class="text-xs text-slate-400 font-medium">Viewing transactions for <span x-text="selectedYear" class="font-bold text-slate-700"></span></p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <input type="text" x-model="searchDesc" placeholder="🔍 Search description..." class="px-4 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                        <select x-model="filterCategory" class="px-4 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:ring-2 focus:ring-teal-500 cursor-pointer outline-none font-medium text-slate-600">
-                            <option value="All">All Categories</option>
-                            <template x-for="cat in currentCategories()" :key="cat.name">
-                                <option :value="cat.name" x-text="cat.name"></option>
-                            </template>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-100/80 text-slate-600 uppercase text-xs font-bold tracking-wider border-b border-slate-200/60">
-                                <tr>
-                                    <th class="p-4">Date</th>
-                                    <th class="p-4">Description</th>
-                                    <th class="p-4">Category</th>
-                                    <th class="p-4">Notes</th>
-                                    <th class="p-4 text-right">Amount</th>
-                                    <th class="p-4 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 font-medium">
-                                <template x-if="getFilteredExpenses().length === 0">
-                                    <tr><td colspan="6" class="p-8 text-center text-slate-400 font-normal">No matching transactions found for <span x-text="selectedYear"></span></td></tr>
-                                </template>
-                                <template x-for="e in getFilteredExpenses()" :key="e.id">
-                                    <tr class="hover:bg-slate-50/60">
-                                        <td class="p-4 whitespace-nowrap text-slate-600 text-xs" x-text="formatDisplayDate(e.date)"></td>
-                                        <td class="p-4 font-bold text-slate-900" x-text="e.description"></td>
-                                        <td class="p-4 text-slate-600 text-xs font-bold" x-text="e.category"></td>
-                                        <td class="p-4 text-slate-400 max-w-xs truncate text-xs" x-text="e.notes || '—'"></td>
-                                        <td class="p-4 text-right font-mono font-bold text-rose-600">-GH₵ <span x-text="formatCurrency(e.amount)"></span></td>
-                                        <td class="p-4 text-center whitespace-nowrap space-x-3">
-                                            <button @click="startEditExpenseById(e.id)" class="text-xs text-blue-600 font-bold hover:underline cursor-pointer">Edit</button>
-                                            <button @click="deleteExpense(e.id)" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">Delete</button>
-                                        </td>
-                                    </tr>
-                                </template>
-                                <tr class="bg-slate-50 font-black border-t border-slate-200">
-                                    <td colspan="4" class="p-4 text-right text-xs uppercase tracking-wider text-slate-400">Total Filtered Output:</td>
-                                    <td class="p-4 text-right font-mono text-base text-rose-600">-GH₵ <span x-text="formatCurrency(getFilteredTotal())"></span></td>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── MODAL: ADD / EDIT CATEGORY ── -->
-        <div x-show="showAddCategoryModal || showEditCategoryModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4" x-cloak>
-            <div class="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-200 shadow-xl space-y-5" @click.away="closeCategoryModal()">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 class="text-base font-black text-slate-900" x-text="showEditCategoryModal ? '✏️ Edit Category Details' : '➕ Add New Category'"></h3>
-                    <button @click="closeCategoryModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
-                </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Category Name</label>
-                        <input type="text" x-model="categoryModalForm.name" placeholder="e.g. Education & Development" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Annual Target Budget (GH₵)</label>
-                        <input type="number" step="0.01" x-model="categoryModalForm.annualBudget" placeholder="0.00" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description / Included Items</label>
-                        <textarea x-model="categoryModalForm.includes" rows="2" placeholder="e.g. School fees, books, and courses" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500"></textarea>
-                    </div>
-
-                    <div class="flex items-center gap-2 pt-1">
-                        <input type="checkbox" id="annualOnlyCheck" x-model="categoryModalForm.isAnnualOnly" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500">
-                        <label for="annualOnlyCheck" class="text-xs text-slate-600 font-medium cursor-pointer">Annual Lump-sum only (Excludes from monthly breakdown)</label>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-2 pt-2">
-                    <button @click="closeCategoryModal()" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200 cursor-pointer">Cancel</button>
-                    <button @click="saveCategoryFromModal()" class="px-5 py-2 bg-teal-700 text-white font-bold text-xs rounded-xl hover:bg-teal-800 cursor-pointer shadow-xs">Save Category</button>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <script type="module">
-    import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore,
-             doc, collection,
-             addDoc, updateDoc, deleteDoc, setDoc,
-             onSnapshot,
-             serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import Alpine              from 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/module.esm.js';
-
-    // ── Firebase config ────────────────────────────────────────────
     const firebaseConfig = {
-        apiKey:            "AIzaSyBfaiP2_Lr70GpzSsVqe6GY-tD92z0smBs",
-        authDomain:        "family-budget-6682c.firebaseapp.com",
-        projectId:         "family-budget-6682c",
-        storageBucket:     "family-budget-6682c.firebasestorage.app",
-        messagingSenderId: "266517802191",
-        appId:             "1:266517802191:web:e6d58da953453628e15bba"
+      apiKey: "AIzaSyD-YOUR-API-KEY",
+      authDomain: "family-budget-6682c.firebaseapp.com",
+      projectId: "family-budget-6682c",
+      storageBucket: "family-budget-6682c.appspot.com",
+      messagingSenderId: "6682c",
+      appId: "1:6682c:web:familybudget"
     };
 
-    const fbApp = initializeApp(firebaseConfig);
-    const db    = getFirestore(fbApp);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    // ── Firestore paths ────────────────────────────────────────────
-    const allotmentsCol = hid => collection(db, 'households', hid, 'allotments');
-    const expensesCol   = hid => collection(db, 'households', hid, 'expenses');
-    const metaDocRef    = hid => doc(db, 'households', hid, 'meta', 'data');
+    window.db = db;
+    window.firestoreTools = { collection, doc, setDoc, addDoc, deleteDoc, onSnapshot };
+  </script>
+</head>
 
-    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+<body x-data="budgetApp()" x-init="initApp()" class="text-slate-800 antialiased min-h-screen pb-16">
 
-    Alpine.data('budgetApp', () => ({
+  <!-- TOP HEADER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight text-slate-900 leading-none uppercase">Family Budget</h1>
+          <p class="text-xs font-semibold text-slate-400 tracking-wider uppercase mt-1">Stanbic Joint Account Hub</p>
+        </div>
+      </div>
 
-        activeTab:    'dashboard',
-        selectedYear: new Date().getFullYear().toString(),
-        selectedMonth: new Date().getMonth() + 1,
-        householdId:  '',
+      <!-- Sync Status & Export -->
+      <div class="flex items-center space-x-3">
+        <!-- Offline / Online Indicator -->
+        <span x-cloak class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+              :class="isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
+          <span class="w-2 h-2 rounded-full mr-1.5" :class="isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
+          <span x-text="isOnline ? (pendingSyncCount > 0 ? `Syncing (${pendingSyncCount})...` : 'Live Synced') : `Offline (${pendingSyncCount} saved)`"></span>
+        </span>
 
-        monthsList: [
-            'January', 'February', 'March', 'April', 'May', 'June', 
-            'July', 'August', 'September', 'October', 'November', 'December'
+        <!-- CSV Export Button -->
+        <button @click="exportToCSV()" class="inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 shadow-xs transition">
+          <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Export CSV
+        </button>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+          <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+            📊 Overview
+          </button>
+          <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+            📅 Monthly Tracker
+          </button>
+          <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+            ➕ Allotments
+          </button>
+          <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+            💸 Transactions
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+
+    <!-- YEAR & HOUSEHOLD CONTROLS -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div class="flex items-center space-x-3">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Selected Year:</label>
+        <select x-model="selectedYear" class="bg-white border border-slate-300 font-extrabold text-slate-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-teal-500 shadow-xs">
+          <template x-for="yr in years" :key="yr">
+            <option :value="yr" x-text="yr"></option>
+          </template>
+        </select>
+      </div>
+
+      <!-- Joint Account Header Summary -->
+      <div class="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-xs flex items-center space-x-6 text-xs">
+        <div>
+          <span class="text-slate-400 font-semibold block uppercase text-[10px]">Total Funding</span>
+          <span class="font-bold text-emerald-600 text-sm" x-text="formatCurrency(calculateTotalAllotments())"></span>
+        </div>
+        <div class="h-6 border-r border-slate-200"></div>
+        <div>
+          <span class="text-slate-400 font-semibold block uppercase text-[10px]">Total Outflow</span>
+          <span class="font-bold text-amber-600 text-sm" x-text="formatCurrency(calculateTotalSpent())"></span>
+        </div>
+        <div class="h-6 border-r border-slate-200"></div>
+        <div>
+          <span class="text-slate-400 font-semibold block uppercase text-[10px]">Stanbic Account Balance</span>
+          <span class="font-extrabold text-teal-700 text-sm" x-text="formatCurrency(calculateTotalAllotments() - calculateTotalSpent())"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: OVERVIEW (CATEGORY MATRIX) -->
+    <div x-show="activeTab === 'overview'" class="space-y-6">
+      
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <!-- Matrix Header -->
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 uppercase tracking-tight">
+              Main Category Matrix (<span x-text="selectedYear"></span>)
+            </h2>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">Edit targets, manage category details, and monitor current status</p>
+          </div>
+          <button @click="openCategoryModal()" class="inline-flex items-center bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Category
+          </button>
+        </div>
+
+        <!-- Matrix Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/70 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                <th class="py-3.5 px-6">Category & Scope</th>
+                <th class="py-3.5 px-6 text-right">Annual Target</th>
+                <th class="py-3.5 px-6 text-right">Monthly Target</th>
+                <th class="py-3.5 px-6 text-right">Money Given</th>
+                <th class="py-3.5 px-6 text-right">Money Spent</th>
+                <th class="py-3.5 px-6 text-right">Remaining</th>
+                <th class="py-3.5 px-6 text-center">Manage</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-xs font-medium">
+              <template x-for="cat in categories" :key="cat.id">
+                <tr class="hover:bg-slate-50/60 transition">
+                  <!-- Name & Scope -->
+                  <td class="py-4 px-6">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-bold text-slate-900 text-sm" x-text="cat.name"></span>
+                      <template x-if="cat.isLumpSum">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                          Annual Lump-sum
+                        </span>
+                      </template>
+                    </div>
+                    <p class="text-slate-400 text-[11px] mt-0.5" x-text="cat.description"></p>
+                  </td>
+
+                  <!-- Annual Target -->
+                  <td class="py-4 px-6 text-right font-bold text-slate-800" x-text="formatCurrency(cat.annualTarget)"></td>
+
+                  <!-- Monthly Target -->
+                  <td class="py-4 px-6 text-right font-medium text-slate-500">
+                    <span x-text="cat.isLumpSum ? 'N/A (Lump-sum)' : formatCurrency(cat.annualTarget / 12) + '/mo'"></span>
+                  </td>
+
+                  <!-- Money Given -->
+                  <td class="py-4 px-6 text-right font-bold text-emerald-600" x-text="formatCurrency(getCategoryAllotments(cat.id))"></td>
+
+                  <!-- Money Spent -->
+                  <td class="py-4 px-6 text-right font-bold text-amber-600" x-text="formatCurrency(getCategorySpent(cat.id))"></td>
+
+                  <!-- Remaining -->
+                  <td class="py-4 px-6 text-right font-bold text-teal-700" x-text="formatCurrency(getCategoryAllotments(cat.id) - getCategorySpent(cat.id))"></td>
+
+                  <!-- Actions -->
+                  <td class="py-4 px-6 text-center">
+                    <div class="flex items-center justify-center space-x-2">
+                      <button @click="editCategory(cat)" class="text-teal-700 hover:text-teal-900 font-bold text-xs inline-flex items-center">
+                        ✏️ Edit
+                      </button>
+                      <button @click="confirmDeleteCategory(cat)" class="text-rose-600 hover:text-rose-800 font-bold text-xs inline-flex items-center ml-2">
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+            <!-- Dark Grand Total Footer -->
+            <tfoot>
+              <tr class="bg-slate-900 text-white font-bold text-sm">
+                <td class="py-5 px-6">
+                  <div class="text-base font-extrabold">Grand Total</div>
+                  <p class="text-slate-400 text-xs font-normal">All Budget Categories (<span x-text="selectedYear"></span>)</p>
+                </td>
+                <td class="py-5 px-6 text-right text-emerald-400 font-extrabold" x-text="formatCurrency(calculateGrandTarget())"></td>
+                <td class="py-5 px-6 text-right text-slate-400">-</td>
+                <td class="py-5 px-6 text-right text-emerald-400 font-extrabold" x-text="formatCurrency(calculateTotalAllotments())"></td>
+                <td class="py-5 px-6 text-right text-amber-400 font-extrabold" x-text="formatCurrency(calculateTotalSpent())"></td>
+                <td class="py-5 px-6 text-right text-teal-300 font-extrabold" x-text="formatCurrency(calculateTotalAllotments() - calculateTotalSpent())"></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: MONTHLY TRACKER -->
+    <div x-show="activeTab === 'monthly'" class="space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 uppercase">Monthly Performance Tracker</h2>
+            <p class="text-xs text-slate-500">Compare fixed monthly target baselines against live actual spending</p>
+          </div>
+          <!-- Month Selector -->
+          <div class="flex items-center space-x-2">
+            <label class="text-xs font-bold text-slate-500 uppercase">Month:</label>
+            <select x-model="selectedMonth" class="bg-slate-50 border border-slate-300 text-xs font-bold rounded-lg px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-teal-500">
+              <template x-for="(m, idx) in monthNames" :key="idx">
+                <option :value="idx" x-text="m"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <template x-for="cat in categories" :key="cat.id">
+            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition shadow-2xs">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-sm" x-text="cat.name"></h3>
+                  <span class="text-[10px] text-slate-400 uppercase font-semibold" x-text="cat.isLumpSum ? 'Annual Lump-sum' : 'Monthly Baseline'"></span>
+                </div>
+                <!-- Status Badge -->
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+                      :class="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+                  <span x-text="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'In Budget' : 'Over Budget'"></span>
+                </span>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="mt-3">
+                <div class="flex justify-between text-xs font-bold mb-1">
+                  <span class="text-slate-500">Spent: <span class="text-slate-900" x-text="formatCurrency(getMonthlySpent(cat.id))"></span></span>
+                  <span class="text-slate-500">Target: <span class="text-slate-900" x-text="formatCurrency(cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12)"></span></span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div class="h-2 rounded-full transition-all duration-300"
+                       :class="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'bg-teal-600' : 'bg-rose-500'"
+                       :style="`width: ${Math.min(100, (getMonthlySpent(cat.id) / (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12)) * 100)}%`">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: ALLOTMENTS -->
+    <div x-show="activeTab === 'allotments'" class="space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 uppercase">Log Funding / Allotment</h2>
+            <p class="text-xs text-slate-500">Record money deposited into the Stanbic Joint Account</p>
+          </div>
+        </div>
+
+        <!-- Add Allotment Form -->
+        <form @submit.prevent="saveAllotment()" class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
+            <select x-model="allotmentForm.categoryId" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+              <option value="">Select Category</option>
+              <template x-for="cat in categories" :key="cat.id">
+                <option :value="cat.id" x-text="cat.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (GHS)</label>
+            <input type="number" step="0.01" min="0.01" x-model.number="allotmentForm.amount" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="0.00">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
+            <input type="date" x-model="allotmentForm.date" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs">
+              + Save Allotment
+            </button>
+          </div>
+        </form>
+
+        <!-- Allotments List -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase">
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4 text-right">Amount</th>
+                <th class="py-3 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <template x-for="item in filteredAllotments" :key="item.id">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-semibold text-slate-600" x-text="item.date"></td>
+                  <td class="py-3 px-4 font-bold text-slate-900" x-text="getCategoryName(item.categoryId)"></td>
+                  <td class="py-3 px-4 text-right font-extrabold text-emerald-600" x-text="formatCurrency(item.amount)"></td>
+                  <td class="py-3 px-4 text-center">
+                    <button @click="deleteAllotment(item.id)" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: TRANSACTIONS -->
+    <div x-show="activeTab === 'transactions'" class="space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 uppercase">Log Expense / Outflow</h2>
+            <p class="text-xs text-slate-500">Record money spent from the Stanbic Joint Account</p>
+          </div>
+        </div>
+
+        <!-- Expense Form -->
+        <form @submit.prevent="saveExpense()" class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
+            <select x-model="expenseForm.categoryId" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+              <option value="">Select Category</option>
+              <template x-for="cat in categories" :key="cat.id">
+                <option :value="cat.id" x-text="cat.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (GHS)</label>
+            <input type="number" step="0.01" min="0.01" x-model.number="expenseForm.amount" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="0.00">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Description</label>
+            <input type="text" x-model="expenseForm.description" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="e.g., ECG Prepaid Topup">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
+            <input type="date" x-model="expenseForm.date" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs">
+              + Log Expense
+            </button>
+          </div>
+        </form>
+
+        <!-- Expenses List -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase">
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4">Description</th>
+                <th class="py-3 px-4 text-right">Amount</th>
+                <th class="py-3 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <template x-for="item in filteredExpenses" :key="item.id">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-semibold text-slate-600" x-text="item.date"></td>
+                  <td class="py-3 px-4 font-bold text-slate-900" x-text="getCategoryName(item.categoryId)"></td>
+                  <td class="py-3 px-4 text-slate-600" x-text="item.description"></td>
+                  <td class="py-3 px-4 text-right font-extrabold text-amber-600" x-text="formatCurrency(item.amount)"></td>
+                  <td class="py-3 px-4 text-center">
+                    <button @click="deleteExpense(item.id)" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- CATEGORY MODAL (CREATE / EDIT) -->
+  <div x-show="showCategoryModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+      <h3 class="text-base font-bold text-slate-900 mb-4" x-text="editingCategory ? 'Edit Category' : 'Create New Category'"></h3>
+      
+      <form @submit.prevent="saveCategoryModal()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category Name</label>
+          <input type="text" x-model="categoryForm.name" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Description / Scope</label>
+          <input type="text" x-model="categoryForm.description" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500" placeholder="e.g. Light, Water, Gas">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Annual Target (GHS)</label>
+          <input type="number" step="0.01" min="0" x-model.number="categoryForm.annualTarget" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="lumpSumCheck" x-model="categoryForm.isLumpSum" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
+          <label for="lumpSumCheck" class="text-xs font-bold text-slate-700">Mark as Annual Lump-sum (No monthly split)</label>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+          <button type="button" @click="showCategoryModal = false" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-xs">Save Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    function budgetApp() {
+      return {
+        householdId: 'fam-default',
+        activeTab: 'overview',
+        selectedYear: '2027',
+        selectedMonth: new Date().getMonth().toString(),
+        years: ['2026', '2027', '2028'],
+        monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        
+        isOnline: navigator.onLine,
+        pendingSyncCount: 0,
+
+        // Updated Defaults matching screenshot
+        categories: [
+          { id: 'cat-rent', name: 'Rent', description: 'Annual Rent Payment', annualTarget: 20400, isLumpSum: true },
+          { id: 'cat-housing', name: 'Housing & Utilities', description: 'Light, Water, Gas, Garbage Services', annualTarget: 9600, isLumpSum: false },
+          { id: 'cat-living', name: 'Living Expenses', description: 'Feeding , Toiletries & Transportation', annualTarget: 36000, isLumpSum: false },
+          { id: 'cat-emergency', name: 'Emergency & Health Fund', description: 'Combined Health Insurance, Medical Costs, Emergency Buffer', annualTarget: 10000, isLumpSum: false },
+          { id: 'cat-entertainment', name: 'Entertainment', description: 'Internet , DSTV Subscription', annualTarget: 8400, isLumpSum: false }
         ],
 
-        // Default Categories for 2026
-        categories2026: [
-            { name: 'Rent & Internet',       annualBudget: 24000.00, includes: 'Annual Rent & Main High-speed Internet Lump-sum', isAnnualOnly: true },
-            { name: 'Housing & Utilities',   annualBudget: 11040.00, includes: 'Light, Water, Gas, Garbage Services' },
-            { name: 'Living Expenses',       annualBudget: 24000.00, includes: 'Feeding & Daily Transportation' },
-            { name: 'Home & Leisure',        annualBudget: 20000.00, includes: 'Home Upgrades, Item Purchases' },
-            { name: 'Emergency & Health Fund', annualBudget: 16960.00, includes: 'Combined Health Insurance, Medical Costs, Emergency Buffer' },
-        ],
+        allotments: [],
+        expenses: [],
 
-        // Default Category Template for 2027 onwards
-        subsequentYearTemplate: [
-            { name: 'Rent & Internet',       annualBudget: 24000.00, includes: 'Annual Rent & Main High-speed Internet Lump-sum', isAnnualOnly: true },
-            { name: 'Housing & Utilities',   annualBudget: 12000.00, includes: 'Light, Water, Gas, Garbage Services' },
-            { name: 'Living Expenses',       annualBudget: 36000.00, includes: 'Feeding & Daily Transportation' },
-            { name: 'Emergency & Health Fund', annualBudget: 20000.00, includes: 'Combined Health Insurance, Medical Costs, Emergency Buffer' },
-            { name: 'Home & Leisure',        annualBudget: 12000.00, includes: 'Home Upgrades, Maintenance & Leisure' },
-        ],
+        showCategoryModal: false,
+        editingCategory: null,
+        categoryForm: { name: '', description: '', annualTarget: 0, isLumpSum: false },
 
-        customBudgets: {},
-        customCategoryDefs: {}, // Holds dynamic category updates per year
-        allotments:     [],
-        expenses:       [],
-        customYears:    [],
-        stanbicBalance: 0,
+        allotmentForm: { categoryId: '', amount: '', date: new Date().toISOString().split('T')[0] },
+        expenseForm: { categoryId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0] },
 
-        searchDesc:     '',
-        filterCategory: 'All',
+        initApp() {
+          // Parse Household ID from URL query param: ?household=fam-xxxx
+          const params = new URLSearchParams(window.location.search);
+          if (params.get('household')) {
+            this.householdId = params.get('household');
+          }
 
-        editingAllotmentId: null,
-        editingExpenseId:   null,
+          // Monitor Online/Offline Status
+          window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.flushOfflineQueue();
+          });
+          window.addEventListener('offline', () => {
+            this.isOnline = false;
+          });
 
-        // Modal controls
-        showAddCategoryModal:  false,
-        showEditCategoryModal: false,
-        editingCategoryOldName: '',
-        categoryModalForm: { name: '', annualBudget: '', includes: '', isAnnualOnly: false },
+          // Check for pending items in LocalStorage
+          this.updatePendingCount();
 
-        allotmentForm: { date: '', category: '', amount: '', notes: '' },
-        expenseForm:   { date: '', description: '', category: '', amount: '', notes: '' },
-
-        _unsubs: [],
-
-        // ── Init ───────────────────────────────────────────────────
-        init() {
-            this.updateFormDatesToSelectedYear();
-
-            const params = new URLSearchParams(window.location.search);
-            let id = params.get('household') || localStorage.getItem('family_household_id');
-            if (!id) id = 'fam-' + uid();
-            this.householdId = id;
-            localStorage.setItem('family_household_id', id);
-            window.history.replaceState({}, '', `${location.pathname}?household=${id}`);
-
-            this.setDefaultFormCategories();
-            this.$watch('selectedYear', () => {
-                this.setDefaultFormCategories();
-                this.updateFormDatesToSelectedYear();
-            });
-
-            this._listenAllotments();
-            this._listenExpenses();
-            this._listenMeta();
+          // Connect Firestore Real-Time Listener
+          this.listenToFirestore();
         },
 
-        destroy() {
-            this._unsubs.forEach(u => u());
-        },
+        listenToFirestore() {
+          if (!window.db) {
+            setTimeout(() => this.listenToFirestore(), 200);
+            return;
+          }
 
-        updateFormDatesToSelectedYear() {
-            const now = new Date();
-            const currentYearStr = now.getFullYear().toString();
-            if (this.selectedYear === currentYearStr) {
-                const today = now.toISOString().split('T')[0];
-                this.allotmentForm.date = today;
-                this.expenseForm.date   = today;
-            } else {
-                this.allotmentForm.date = `${this.selectedYear}-01-01`;
-                this.expenseForm.date   = `${this.selectedYear}-01-01`;
+          const { collection, doc, onSnapshot } = window.firestoreTools;
+
+          // Categories Listener
+          onSnapshot(collection(window.db, 'households', this.householdId, 'categories'), (snapshot) => {
+            if (!snapshot.empty) {
+              this.categories = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             }
+          });
+
+          // Allotments Listener
+          onSnapshot(collection(window.db, 'households', this.householdId, 'allotments'), (snapshot) => {
+            this.allotments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          });
+
+          // Expenses Listener
+          onSnapshot(collection(window.db, 'households', this.householdId, 'expenses'), (snapshot) => {
+            this.expenses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          });
         },
 
-        _listenAllotments() {
-            const unsub = onSnapshot(
-                allotmentsCol(this.householdId),
-                snap => {
-                    this.allotments = snap.docs
-                        .map(d => ({ id: d.id, ...d.data() }))
-                        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-                }
-            );
-            this._unsubs.push(unsub);
+        // OFFLINE QUEUE MANAGEMENT
+        getOfflineQueue() {
+          return JSON.parse(localStorage.getItem('fb_offline_queue') || '[]');
         },
-
-        _listenExpenses() {
-            const unsub = onSnapshot(
-                expensesCol(this.householdId),
-                snap => {
-                    this.expenses = snap.docs
-                        .map(d => ({ id: d.id, ...d.data() }))
-                        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-                }
-            );
-            this._unsubs.push(unsub);
+        saveOfflineQueue(queue) {
+          localStorage.setItem('fb_offline_queue', JSON.stringify(queue));
+          this.updatePendingCount();
         },
-
-        _listenMeta() {
-            const unsub = onSnapshot(
-                metaDocRef(this.householdId),
-                snap => {
-                    if (snap.exists()) {
-                        const d = snap.data();
-                        this.stanbicBalance     = d.stanbicBalance     ?? 0;
-                        this.customYears        = d.customYears        ?? [];
-                        this.customBudgets      = d.customBudgets      ?? {};
-                        this.customCategoryDefs = d.customCategoryDefs ?? {};
-                    }
-                }
-            );
-            this._unsubs.push(unsub);
+        updatePendingCount() {
+          this.pendingSyncCount = this.getOfflineQueue().length;
         },
+        async queueOrSave(colName, payload) {
+          if (!this.isOnline) {
+            const queue = this.getOfflineQueue();
+            queue.push({ colName, payload, id: 'temp-' + Date.now() });
+            this.saveOfflineQueue(queue);
+            // Optimistic update
+            if (colName === 'allotments') this.allotments.push(payload);
+            if (colName === 'expenses') this.expenses.push(payload);
+            return;
+          }
 
-        async _saveMeta() {
-            await setDoc(metaDocRef(this.householdId), {
-                stanbicBalance:     this.stanbicBalance,
-                customYears:        this.customYears,
-                customBudgets:      this.customBudgets,
-                customCategoryDefs: this.customCategoryDefs,
-                updatedAt:          serverTimestamp(),
-            }, { merge: true });
+          const { collection, addDoc } = window.firestoreTools;
+          await addDoc(collection(window.db, 'households', this.householdId, colName), payload);
         },
+        async flushOfflineQueue() {
+          const queue = this.getOfflineQueue();
+          if (queue.length === 0) return;
 
-        // ── Target Budget & Category Customizations ─────────────────
-        updateTargetBudget(catName, newBudget) {
-            const val = parseFloat(newBudget);
-            if (isNaN(val) || val < 0) return;
-            const key = `${this.selectedYear}_${catName}`;
-            this.customBudgets[key] = val;
-            this._saveMeta();
-        },
-
-        currentCategories() {
-            const yearKey = this.selectedYear;
-            const baseTemplate = yearKey === '2026' ? this.categories2026 : this.subsequentYearTemplate;
-            
-            // If year has custom category list saved in meta, use it
-            let activeList = this.customCategoryDefs[yearKey] 
-                ? JSON.parse(JSON.stringify(this.customCategoryDefs[yearKey]))
-                : JSON.parse(JSON.stringify(baseTemplate));
-
-            return activeList.map(c => {
-                const key = `${yearKey}_${c.name}`;
-                return {
-                    ...c,
-                    annualBudget: this.customBudgets[key] !== undefined ? this.customBudgets[key] : c.annualBudget
-                };
-            });
-        },
-
-        // Modal Handlers for Adding & Editing Categories
-        openEditCategoryModal(cat) {
-            this.editingCategoryOldName = cat.name;
-            this.categoryModalForm = {
-                name: cat.name,
-                annualBudget: cat.annualBudget,
-                includes: cat.includes || '',
-                isAnnualOnly: !!cat.isAnnualOnly
-            };
-            this.showEditCategoryModal = true;
-        },
-
-        closeCategoryModal() {
-            this.showAddCategoryModal = false;
-            this.showEditCategoryModal = false;
-            this.categoryModalForm = { name: '', annualBudget: '', includes: '', isAnnualOnly: false };
-            this.editingCategoryOldName = '';
-        },
-
-        saveCategoryFromModal() {
-            if (!this.categoryModalForm.name.trim()) {
-                alert('Please provide a category name.');
-                return;
+          const { collection, addDoc } = window.firestoreTools;
+          for (const item of queue) {
+            try {
+              await addDoc(collection(window.db, 'households', this.householdId, item.colName), item.payload);
+            } catch (e) {
+              console.error("Failed to sync queue item:", e);
             }
+          }
+          localStorage.setItem('fb_offline_queue', '[]');
+          this.updatePendingCount();
+        },
 
-            const yearKey = this.selectedYear;
-            let currentList = this.currentCategories();
+        // COMPUTED / HELPERS
+        get filteredAllotments() {
+          return this.allotments.filter(a => new Date(a.date).getFullYear().toString() === this.selectedYear);
+        },
+        get filteredExpenses() {
+          return this.expenses.filter(e => new Date(e.date).getFullYear().toString() === this.selectedYear);
+        },
+        getCategoryName(id) {
+          const c = this.categories.find(item => item.id === id);
+          return c ? c.name : 'Unknown';
+        },
+        getCategoryAllotments(catId) {
+          return this.filteredAllotments
+            .filter(a => a.categoryId === catId)
+            .reduce((sum, a) => sum + Number(a.amount || 0), 0);
+        },
+        getCategorySpent(catId) {
+          return this.filteredExpenses
+            .filter(e => e.categoryId === catId)
+            .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+        },
+        getMonthlySpent(catId) {
+          return this.expenses
+            .filter(e => {
+              const d = new Date(e.date);
+              return e.categoryId === catId && 
+                     d.getFullYear().toString() === this.selectedYear && 
+                     d.getMonth().toString() === this.selectedMonth;
+            })
+            .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+        },
+        calculateGrandTarget() {
+          return this.categories.reduce((sum, c) => sum + Number(c.annualTarget || 0), 0);
+        },
+        calculateTotalAllotments() {
+          return this.filteredAllotments.reduce((sum, a) => sum + Number(a.amount || 0), 0);
+        },
+        calculateTotalSpent() {
+          return this.filteredExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+        },
 
-            if (this.showEditCategoryModal) {
-                // Update existing category
-                const idx = currentList.findIndex(c => c.name === this.editingCategoryOldName);
-                if (idx !== -1) {
-                    currentList[idx] = {
-                        name: this.categoryModalForm.name.trim(),
-                        annualBudget: parseFloat(this.categoryModalForm.annualBudget) || 0,
-                        includes: this.categoryModalForm.includes.trim(),
-                        isAnnualOnly: !!this.categoryModalForm.isAnnualOnly
-                    };
-                }
-            } else {
-                // Add new category
-                currentList.push({
-                    name: this.categoryModalForm.name.trim(),
-                    annualBudget: parseFloat(this.categoryModalForm.annualBudget) || 0,
-                    includes: this.categoryModalForm.includes.trim(),
-                    isAnnualOnly: !!this.categoryModalForm.isAnnualOnly
-                });
+        // CATEGORY MODAL & DELETE
+        openCategoryModal() {
+          this.editingCategory = null;
+          this.categoryForm = { name: '', description: '', annualTarget: 0, isLumpSum: false };
+          this.showCategoryModal = true;
+        },
+        editCategory(cat) {
+          this.editingCategory = cat;
+          this.categoryForm = { ...cat };
+          this.showCategoryModal = true;
+        },
+        async saveCategoryModal() {
+          const { collection, doc, setDoc } = window.firestoreTools;
+          const catId = this.editingCategory ? this.editingCategory.id : 'cat-' + Date.now();
+          const payload = { ...this.categoryForm, id: catId };
+
+          if (this.isOnline) {
+            await setDoc(doc(window.db, 'households', this.householdId, 'categories', catId), payload);
+          } else {
+            const idx = this.categories.findIndex(c => c.id === catId);
+            if (idx >= 0) this.categories[idx] = payload;
+            else this.categories.push(payload);
+          }
+          this.showCategoryModal = false;
+        },
+        async confirmDeleteCategory(cat) {
+          if (confirm(`Are you sure you want to delete "${cat.name}"? This action cannot be undone.`)) {
+            if (this.isOnline) {
+              const { doc, deleteDoc } = window.firestoreTools;
+              await deleteDoc(doc(window.db, 'households', this.householdId, 'categories', cat.id));
             }
-
-            this.customCategoryDefs[yearKey] = currentList;
-            const budgetKey = `${yearKey}_${this.categoryModalForm.name.trim()}`;
-            this.customBudgets[budgetKey] = parseFloat(this.categoryModalForm.annualBudget) || 0;
-
-            this._saveMeta();
-            this.closeCategoryModal();
+            this.categories = this.categories.filter(c => c.id !== cat.id);
+          }
         },
 
-        // ── Year management ────────────────────────────────────────
-        getAvailableYears() {
-            const base = ['2026', '2027'];
-            const fromData = [
-                ...this.allotments.map(a => a.date?.split('-')[0]),
-                ...this.expenses.map(e => e.date?.split('-')[0]),
-            ].filter(Boolean);
-            return [...new Set([...base, ...fromData, ...this.customYears])].sort();
-        },
-
-        createNewYear() {
-            const yr = prompt('Enter the year to add (e.g. 2028):')?.trim();
-            if (!yr || !/^\d{4}$/.test(yr)) { if (yr) alert('Please enter a valid 4-digit year.'); return; }
-            if (this.getAvailableYears().includes(yr)) { alert('That year already exists.'); this.selectedYear = yr; return; }
-            this.customYears.push(yr);
-            this.selectedYear = yr;
-            this._saveMeta();
-        },
-
-        setDefaultFormCategories() {
-            const first = this.currentCategories()[0]?.name || '';
-            this.allotmentForm.category = first;
-            this.expenseForm.category   = first;
-        },
-
-        // ── Formatting ─────────────────────────────────────────────
-        formatCurrency(num) {
-            return parseFloat(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        },
-
-        formatDisplayDate(d) {
-            if (!d) return '';
-            const [y, m, day] = d.split('-');
-            return `${day} / ${m} / ${y}`;
-        },
-
-        // ── Budget metrics ─────────────────────────────────────────
-        getCategoryMetrics(catName) {
-            const yr    = this.selectedYear;
-            const given = this.allotments.filter(a => a.category === catName && a.date?.startsWith(yr))
-                              .reduce((s, a) => s + parseFloat(a.amount || 0), 0);
-            const spent = this.expenses.filter(e => e.category === catName && e.date?.startsWith(yr))
-                              .reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-            return { given, spent, remaining: given - spent };
-        },
-
-        getTotalBudget()    { return this.currentCategories().reduce((s, c) => s + c.annualBudget, 0); },
-        getTotalGiven()     { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).given, 0); },
-        getTotalSpent()     { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).spent, 0); },
-        getTotalRemaining() { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).remaining, 0); },
-
-        // ── Monthly Dashboard Calculations (2027+) ───────────────────
-        getMonthlyCategorySpent(catName, monthNum) {
-            const monthStr = monthNum < 10 ? `0${monthNum}` : `${monthNum}`;
-            const prefix = `${this.selectedYear}-${monthStr}`;
-            return this.expenses
-                .filter(e => e.category === catName && e.date?.startsWith(prefix))
-                .reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-        },
-
-        getMonthlyCategoryVariance(cat, monthNum) {
-            if (cat.isAnnualOnly) return 0;
-            const target = cat.annualBudget / 12;
-            const actual = this.getMonthlyCategorySpent(cat.name, monthNum);
-            return target - actual;
-        },
-
-        getMonthlyTargetTotal() {
-            return this.currentCategories()
-                .filter(c => !c.isAnnualOnly)
-                .reduce((s, c) => s + (c.annualBudget / 12), 0);
-        },
-
-        // ── Year-Specific Data Fetchers ─────────────────────────────
-        getYearExpenses() {
-            return this.expenses.filter(e => e.date?.startsWith(this.selectedYear));
-        },
-
-        getYearAllotments() {
-            return this.allotments.filter(a => a.date?.startsWith(this.selectedYear));
-        },
-
-        // ── Allotment CRUD ─────────────────────────────────────────
+        // ALLOTMENTS & EXPENSES
         async saveAllotment() {
-            const item = { ...this.allotmentForm, amount: parseFloat(this.allotmentForm.amount) };
-            if (this.editingAllotmentId !== null) {
-                await updateDoc(doc(db, 'households', this.householdId, 'allotments', this.editingAllotmentId),
-                    { ...item, updatedAt: serverTimestamp() });
-            } else {
-                await addDoc(allotmentsCol(this.householdId),
-                    { ...item, createdAt: serverTimestamp() });
-            }
-            this.resetAllotmentForm();
+          await this.queueOrSave('allotments', { ...this.allotmentForm });
+          this.allotmentForm = { categoryId: '', amount: '', date: new Date().toISOString().split('T')[0] };
         },
-
-        startEditAllotmentById(id) {
-            this.editingAllotmentId = id;
-            const a = this.allotments.find(item => item.id === id);
-            if (a) {
-                this.allotmentForm = { date: a.date, category: a.category, amount: a.amount, notes: a.notes || '' };
-            }
-        },
-
-        resetAllotmentForm() {
-            this.editingAllotmentId = null;
-            this.updateFormDatesToSelectedYear();
-            this.allotmentForm.category = this.currentCategories()[0]?.name || '';
-            this.allotmentForm.amount = '';
-            this.allotmentForm.notes = '';
-        },
-
         async deleteAllotment(id) {
-            if (!confirm('Delete this allotment?')) return;
-            await deleteDoc(doc(db, 'households', this.householdId, 'allotments', id));
+          if (confirm('Delete this allotment entry?')) {
+            if (this.isOnline) {
+              const { doc, deleteDoc } = window.firestoreTools;
+              await deleteDoc(doc(window.db, 'households', this.householdId, 'allotments', id));
+            }
+            this.allotments = this.allotments.filter(a => a.id !== id);
+          }
         },
-
-        // ── Expense CRUD ───────────────────────────────────────────
         async saveExpense() {
-            const item = { ...this.expenseForm, amount: parseFloat(this.expenseForm.amount) };
-            if (this.editingExpenseId !== null) {
-                await updateDoc(doc(db, 'households', this.householdId, 'expenses', this.editingExpenseId),
-                    { ...item, updatedAt: serverTimestamp() });
-            } else {
-                await addDoc(expensesCol(this.householdId),
-                    { ...item, createdAt: serverTimestamp() });
-            }
-            this.resetExpenseForm();
+          await this.queueOrSave('expenses', { ...this.expenseForm });
+          this.expenseForm = { categoryId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0] };
         },
-
-        startEditExpenseById(id) {
-            this.editingExpenseId = id;
-            const e = this.expenses.find(item => item.id === id);
-            if (e) {
-                this.expenseForm = { date: e.date, description: e.description, category: e.category, amount: e.amount, notes: e.notes || '' };
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        },
-
-        resetExpenseForm() {
-            this.editingExpenseId = null;
-            this.updateFormDatesToSelectedYear();
-            this.expenseForm.description = '';
-            this.expenseForm.category = this.currentCategories()[0]?.name || '';
-            this.expenseForm.amount = '';
-            this.expenseForm.notes = '';
-        },
-
         async deleteExpense(id) {
-            if (!confirm('Delete this transaction?')) return;
-            await deleteDoc(doc(db, 'households', this.householdId, 'expenses', id));
+          if (confirm('Delete this transaction?')) {
+            if (this.isOnline) {
+              const { doc, deleteDoc } = window.firestoreTools;
+              await deleteDoc(doc(window.db, 'households', this.householdId, 'expenses', id));
+            }
+            this.expenses = this.expenses.filter(e => e.id !== id);
+          }
         },
 
-        // ── Transactions/History Filters ──────────────────────────
-        getFilteredExpenses() {
-            return this.getYearExpenses().filter(e => {
-                const matchSearch   = e.description?.toLowerCase().includes(this.searchDesc.toLowerCase());
-                const matchCategory = this.filterCategory === 'All' || e.category === this.filterCategory;
-                return matchSearch && matchCategory;
-            });
+        // CSV EXPORT
+        exportToCSV() {
+          let csvContent = "data:text/csv;charset=utf-8,Type,Date,Category,Description,Amount (GHS)\n";
+
+          this.filteredAllotments.forEach(a => {
+            csvContent += `Allotment,${a.date},"${this.getCategoryName(a.categoryId)}","",${a.amount}\n`;
+          });
+
+          this.filteredExpenses.forEach(e => {
+            csvContent += `Expense,${e.date},"${this.getCategoryName(e.categoryId)}","${e.description}",${e.amount}\n`;
+          });
+
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement("a");
+          link.setAttribute("href", encodedUri);
+          link.setAttribute("download", `family_budget_${this.selectedYear}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         },
 
-        getFilteredTotal() {
-            return this.getFilteredExpenses().reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-        },
-
-    }));
-
-    Alpine.start();
-    </script>
+        formatCurrency(val) {
+          return 'GH₵ ' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+      }
+    }
+  </script>
 </body>
 </html>
