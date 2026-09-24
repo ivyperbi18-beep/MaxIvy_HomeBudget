@@ -81,7 +81,7 @@
         </span>
 
         <!-- CSV Export Button -->
-        <button @click="exportToCSV()" class="inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 shadow-xs transition">
+        <button @click="exportToCSV()" class="inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 shadow-xs transition cursor-pointer">
           <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
@@ -90,16 +90,16 @@
 
         <!-- Navigation Tabs -->
         <nav class="flex bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-          <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+          <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
             📊 Overview
           </button>
-          <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+          <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
             📅 Monthly Tracker
           </button>
-          <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+          <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
             ➕ Allotments
           </button>
-          <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+          <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
             💸 Transactions
           </button>
         </nav>
@@ -114,7 +114,7 @@
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
       <div class="flex items-center space-x-3">
         <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Selected Year:</label>
-        <select x-model="selectedYear" class="bg-white border border-slate-300 font-extrabold text-slate-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-teal-500 shadow-xs">
+        <select x-model="selectedYear" class="bg-white border border-slate-300 font-extrabold text-slate-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-teal-500 shadow-xs cursor-pointer">
           <template x-for="yr in years" :key="yr">
             <option :value="yr" x-text="yr"></option>
           </template>
@@ -152,7 +152,7 @@
             </h2>
             <p class="text-xs text-slate-500 font-medium mt-0.5">Edit targets, manage category details, and monitor current status</p>
           </div>
-          <button @click="openCategoryModal()" class="inline-flex items-center bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm">
+          <button @click="openCategoryModal()" class="inline-flex items-center bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm cursor-pointer">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -210,10 +210,10 @@
                   <!-- Actions -->
                   <td class="py-4 px-6 text-center">
                     <div class="flex items-center justify-center space-x-2">
-                      <button @click="editCategory(cat)" class="text-teal-700 hover:text-teal-900 font-bold text-xs inline-flex items-center">
+                      <button @click="editCategory(cat)" class="text-teal-700 hover:text-teal-900 font-bold text-xs inline-flex items-center cursor-pointer">
                         ✏️ Edit
                       </button>
-                      <button @click="confirmDeleteCategory(cat)" class="text-rose-600 hover:text-rose-800 font-bold text-xs inline-flex items-center ml-2">
+                      <button @click="confirmDeleteCategory(cat)" class="text-rose-600 hover:text-rose-800 font-bold text-xs inline-flex items-center ml-2 cursor-pointer">
                         🗑️
                       </button>
                     </div>
@@ -252,7 +252,7 @@
           <!-- Month Selector -->
           <div class="flex items-center space-x-2">
             <label class="text-xs font-bold text-slate-500 uppercase">Month:</label>
-            <select x-model="selectedMonth" class="bg-slate-50 border border-slate-300 text-xs font-bold rounded-lg px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-teal-500">
+            <select x-model="selectedMonth" class="bg-slate-50 border border-slate-300 text-xs font-bold rounded-lg px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-teal-500 cursor-pointer">
               <template x-for="(m, idx) in monthNames" :key="idx">
                 <option :value="idx" x-text="m"></option>
               </template>
@@ -324,20 +324,26 @@
             <input type="date" x-model="allotmentForm.date" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
           </div>
           <div class="flex items-end">
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs">
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs cursor-pointer">
               + Save Allotment
             </button>
           </div>
         </form>
 
-        <!-- Allotments List -->
+        <!-- Allotments List with Interactive Sort Headers -->
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
-              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase">
-                <th class="py-3 px-4">Date</th>
-                <th class="py-3 px-4">Category</th>
-                <th class="py-3 px-4 text-right">Amount</th>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase select-none">
+                <th @click="toggleSort('date')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Date <span x-text="sortField === 'date' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th @click="toggleSort('category')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Category <span x-text="sortField === 'category' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th @click="toggleSort('amount')" class="py-3 px-4 text-right hover:text-teal-700 cursor-pointer">
+                  Amount <span x-text="sortField === 'amount' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
                 <th class="py-3 px-4 text-center">Action</th>
               </tr>
             </thead>
@@ -348,7 +354,7 @@
                   <td class="py-3 px-4 font-bold text-slate-900" x-text="getCategoryName(item.categoryId)"></td>
                   <td class="py-3 px-4 text-right font-extrabold text-emerald-600" x-text="formatCurrency(item.amount)"></td>
                   <td class="py-3 px-4 text-center">
-                    <button @click="deleteAllotment(item.id)" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+                    <button @click="deleteAllotment(item.id)" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
                   </td>
                 </tr>
               </template>
@@ -392,21 +398,27 @@
             <input type="date" x-model="expenseForm.date" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
           </div>
           <div class="flex items-end">
-            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs">
+            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs cursor-pointer">
               + Log Expense
             </button>
           </div>
         </form>
 
-        <!-- Expenses List -->
+        <!-- Expenses List with Interactive Sort Headers -->
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
-              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase">
-                <th class="py-3 px-4">Date</th>
-                <th class="py-3 px-4">Category</th>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase select-none">
+                <th @click="toggleSort('date')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Date <span x-text="sortField === 'date' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th @click="toggleSort('category')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Category <span x-text="sortField === 'category' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
                 <th class="py-3 px-4">Description</th>
-                <th class="py-3 px-4 text-right">Amount</th>
+                <th @click="toggleSort('amount')" class="py-3 px-4 text-right hover:text-teal-700 cursor-pointer">
+                  Amount <span x-text="sortField === 'amount' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
                 <th class="py-3 px-4 text-center">Action</th>
               </tr>
             </thead>
@@ -418,7 +430,7 @@
                   <td class="py-3 px-4 text-slate-600" x-text="item.description"></td>
                   <td class="py-3 px-4 text-right font-extrabold text-amber-600" x-text="formatCurrency(item.amount)"></td>
                   <td class="py-3 px-4 text-center">
-                    <button @click="deleteExpense(item.id)" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+                    <button @click="deleteExpense(item.id)" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
                   </td>
                 </tr>
               </template>
@@ -452,13 +464,13 @@
         </div>
 
         <div class="flex items-center space-x-2 pt-1">
-          <input type="checkbox" id="lumpSumCheck" x-model="categoryForm.isLumpSum" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
-          <label for="lumpSumCheck" class="text-xs font-bold text-slate-700">Mark as Annual Lump-sum (No monthly split)</label>
+          <input type="checkbox" id="lumpSumCheck" x-model="categoryForm.isLumpSum" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer">
+          <label for="lumpSumCheck" class="text-xs font-bold text-slate-700 cursor-pointer">Mark as Annual Lump-sum (No monthly split)</label>
         </div>
 
         <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
-          <button type="button" @click="showCategoryModal = false" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-          <button type="submit" class="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-xs">Save Category</button>
+          <button type="button" @click="showCategoryModal = false" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-xs cursor-pointer">Save Category</button>
         </div>
       </form>
     </div>
@@ -478,7 +490,11 @@
         isOnline: navigator.onLine,
         pendingSyncCount: 0,
 
-        // Updated Defaults matching screenshot
+        // Table Sorting State
+        sortField: 'date',
+        sortAsc: false, // Defaults to newest first
+
+        // Default Categories
         categories: [
           { id: 'cat-rent', name: 'Rent', description: 'Annual Rent Payment', annualTarget: 20400, isLumpSum: true },
           { id: 'cat-housing', name: 'Housing & Utilities', description: 'Light, Water, Gas, Garbage Services', annualTarget: 9600, isLumpSum: false },
@@ -498,13 +514,11 @@
         expenseForm: { categoryId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0] },
 
         initApp() {
-          // Parse Household ID from URL query param: ?household=fam-xxxx
           const params = new URLSearchParams(window.location.search);
           if (params.get('household')) {
             this.householdId = params.get('household');
           }
 
-          // Monitor Online/Offline Status
           window.addEventListener('online', () => {
             this.isOnline = true;
             this.flushOfflineQueue();
@@ -513,10 +527,7 @@
             this.isOnline = false;
           });
 
-          // Check for pending items in LocalStorage
           this.updatePendingCount();
-
-          // Connect Firestore Real-Time Listener
           this.listenToFirestore();
         },
 
@@ -528,22 +539,29 @@
 
           const { collection, doc, onSnapshot } = window.firestoreTools;
 
-          // Categories Listener
           onSnapshot(collection(window.db, 'households', this.householdId, 'categories'), (snapshot) => {
             if (!snapshot.empty) {
               this.categories = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             }
           });
 
-          // Allotments Listener
           onSnapshot(collection(window.db, 'households', this.householdId, 'allotments'), (snapshot) => {
             this.allotments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
           });
 
-          // Expenses Listener
           onSnapshot(collection(window.db, 'households', this.householdId, 'expenses'), (snapshot) => {
             this.expenses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
           });
+        },
+
+        // SORTING TOGGLE
+        toggleSort(field) {
+          if (this.sortField === field) {
+            this.sortAsc = !this.sortAsc;
+          } else {
+            this.sortField = field;
+            this.sortAsc = true;
+          }
         },
 
         // OFFLINE QUEUE MANAGEMENT
@@ -562,7 +580,6 @@
             const queue = this.getOfflineQueue();
             queue.push({ colName, payload, id: 'temp-' + Date.now() });
             this.saveOfflineQueue(queue);
-            // Optimistic update
             if (colName === 'allotments') this.allotments.push(payload);
             if (colName === 'expenses') this.expenses.push(payload);
             return;
@@ -587,25 +604,47 @@
           this.updatePendingCount();
         },
 
-        // COMPUTED / HELPERS
+        // COMPUTED / SORTED LISTS
         get filteredAllotments() {
-          return this.allotments.filter(a => new Date(a.date).getFullYear().toString() === this.selectedYear);
+          let list = this.allotments.filter(a => new Date(a.date).getFullYear().toString() === this.selectedYear);
+          return list.sort((a, b) => {
+            let modifier = this.sortAsc ? 1 : -1;
+            if (this.sortField === 'date') return (new Date(a.date) - new Date(b.date)) * modifier;
+            if (this.sortField === 'amount') return (Number(a.amount) - Number(b.amount)) * modifier;
+            if (this.sortField === 'category') {
+              let catA = this.getCategoryName(a.categoryId).toLowerCase();
+              let catB = this.getCategoryName(b.categoryId).toLowerCase();
+              return catA.localeCompare(catB) * modifier;
+            }
+            return 0;
+          });
         },
         get filteredExpenses() {
-          return this.expenses.filter(e => new Date(e.date).getFullYear().toString() === this.selectedYear);
+          let list = this.expenses.filter(e => new Date(e.date).getFullYear().toString() === this.selectedYear);
+          return list.sort((a, b) => {
+            let modifier = this.sortAsc ? 1 : -1;
+            if (this.sortField === 'date') return (new Date(a.date) - new Date(b.date)) * modifier;
+            if (this.sortField === 'amount') return (Number(a.amount) - Number(b.amount)) * modifier;
+            if (this.sortField === 'category') {
+              let catA = this.getCategoryName(a.categoryId).toLowerCase();
+              let catB = this.getCategoryName(b.categoryId).toLowerCase();
+              return catA.localeCompare(catB) * modifier;
+            }
+            return 0;
+          });
         },
         getCategoryName(id) {
           const c = this.categories.find(item => item.id === id);
           return c ? c.name : 'Unknown';
         },
         getCategoryAllotments(catId) {
-          return this.filteredAllotments
-            .filter(a => a.categoryId === catId)
+          return this.allotments
+            .filter(a => a.categoryId === catId && new Date(a.date).getFullYear().toString() === this.selectedYear)
             .reduce((sum, a) => sum + Number(a.amount || 0), 0);
         },
         getCategorySpent(catId) {
-          return this.filteredExpenses
-            .filter(e => e.categoryId === catId)
+          return this.expenses
+            .filter(e => e.categoryId === catId && new Date(e.date).getFullYear().toString() === this.selectedYear)
             .reduce((sum, e) => sum + Number(e.amount || 0), 0);
         },
         getMonthlySpent(catId) {
