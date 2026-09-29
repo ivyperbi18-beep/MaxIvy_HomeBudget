@@ -3,309 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Family Budget - Stanbic Joint Account Hub</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <!-- Alpine.js -->
+  <title>Household Budget & Expense Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <style>
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #f8fafc;
-    }
-    [x-cloak] { display: none !important; }
-  </style>
-
-  <!-- Firebase Scripts -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, 
-      collection, 
-      doc, 
-      setDoc, 
-      addDoc, 
-      deleteDoc, 
-      onSnapshot 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyD-YOUR-API-KEY",
-      authDomain: "family-budget-6682c.firebaseapp.com",
-      projectId: "family-budget-6682c",
-      storageBucket: "family-budget-6682c.appspot.com",
-      messagingSenderId: "6682c",
-      appId: "1:6682c:web:familybudget"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    window.db = db;
-    window.firestoreTools = { collection, doc, setDoc, addDoc, deleteDoc, onSnapshot };
-  </script>
+  <style>[x-cloak] { display: none !important; }</style>
 </head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans min-h-screen pb-12" x-data="budgetApp()" x-init="initApp()">
 
-<body x-data="budgetApp()" x-init="initApp()" class="text-slate-800 antialiased min-h-screen pb-16">
-
-  <!-- TOP HEADER -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+  <!-- NAVBAR -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-xl font-black tracking-tight text-teal-400 uppercase">Household Budget Hub</h1>
+        <p class="text-xs text-slate-400">Offline & Online Budget Allocation Manager</p>
+      </div>
       
-      <!-- Logo & Title -->
-      <div class="flex items-center space-x-3.5">
-        <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/20">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-xl font-extrabold tracking-tight text-slate-900 leading-none uppercase">Family Budget</h1>
-          <p class="text-xs font-semibold text-slate-400 tracking-wider uppercase mt-1">Stanbic Joint Account Hub</p>
-        </div>
-      </div>
-
-      <!-- Sync Status & Export -->
-      <div class="flex items-center space-x-3">
-        <!-- Offline / Online Indicator -->
-        <span x-cloak class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
-              :class="isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
-          <span class="w-2 h-2 rounded-full mr-1.5" :class="isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
-          <span x-text="isOnline ? (pendingSyncCount > 0 ? `Syncing (${pendingSyncCount})...` : 'Live Synced') : `Offline (${pendingSyncCount} saved)`"></span>
-        </span>
-
-        <!-- CSV Export Button -->
-        <button @click="exportToCSV()" class="inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 shadow-xs transition cursor-pointer">
-          <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          Export CSV
-        </button>
-
-        <!-- Navigation Tabs -->
-        <nav class="flex bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-          <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
-            📊 Overview
-          </button>
-          <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
-            📅 Monthly Tracker
-          </button>
-          <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
-            ➕ Allotments
-          </button>
-          <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
-            💸 Transactions
-          </button>
-        </nav>
-      </div>
+      <!-- TAB NAVIGATION -->
+      <nav class="flex space-x-1 bg-slate-800 p-1 rounded-xl text-xs font-bold">
+        <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Dashboard</button>
+        <button @click="activeTab = 'categories'" :class="activeTab === 'categories' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Categories</button>
+        <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Allotments</button>
+        <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Transactions</button>
+      </nav>
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+  <main class="max-w-6xl mx-auto px-4 mt-6">
 
-    <!-- YEAR & HOUSEHOLD CONTROLS -->
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-      <div class="flex items-center space-x-3">
-        <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Selected Year:</label>
-        <select x-model="selectedYear" class="bg-white border border-slate-300 font-extrabold text-slate-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-teal-500 shadow-xs cursor-pointer">
-          <template x-for="yr in years" :key="yr">
-            <option :value="yr" x-text="yr"></option>
-          </template>
-        </select>
-      </div>
-
-      <!-- Joint Account Header Summary -->
-      <div class="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-xs flex items-center space-x-6 text-xs">
-        <div>
-          <span class="text-slate-400 font-semibold block uppercase text-[10px]">Total Funding</span>
-          <span class="font-bold text-emerald-600 text-sm" x-text="formatCurrency(calculateTotalAllotments())"></span>
+    <!-- TAB 1: DASHBOARD -->
+    <div x-show="activeTab === 'dashboard'" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <p class="text-xs font-bold text-slate-500 uppercase">Total Income / Allotted</p>
+          <h3 class="text-2xl font-black text-teal-700 mt-1" x-text="formatCurrency(totalAllotted)"></h3>
         </div>
-        <div class="h-6 border-r border-slate-200"></div>
-        <div>
-          <span class="text-slate-400 font-semibold block uppercase text-[10px]">Total Outflow</span>
-          <span class="font-bold text-amber-600 text-sm" x-text="formatCurrency(calculateTotalSpent())"></span>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <p class="text-xs font-bold text-slate-500 uppercase">Total Expenses</p>
+          <h3 class="text-2xl font-black text-amber-600 mt-1" x-text="formatCurrency(totalSpent)"></h3>
         </div>
-        <div class="h-6 border-r border-slate-200"></div>
-        <div>
-          <span class="text-slate-400 font-semibold block uppercase text-[10px]">Stanbic Account Balance</span>
-          <span class="font-extrabold text-teal-700 text-sm" x-text="formatCurrency(calculateTotalAllotments() - calculateTotalSpent())"></span>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <p class="text-xs font-bold text-slate-500 uppercase">Remaining Balance</p>
+          <h3 class="text-2xl font-black mt-1" :class="remainingBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="formatCurrency(remainingBalance)"></h3>
         </div>
       </div>
-    </div>
 
-    <!-- TAB 1: OVERVIEW (CATEGORY MATRIX) -->
-    <div x-show="activeTab === 'overview'" class="space-y-6">
-      
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <!-- Matrix Header -->
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-bold text-slate-900 uppercase tracking-tight">
-              Main Category Matrix (<span x-text="selectedYear"></span>)
-            </h2>
-            <p class="text-xs text-slate-500 font-medium mt-0.5">Edit targets, manage category details, and monitor current status</p>
-          </div>
-          <button @click="openCategoryModal()" class="inline-flex items-center bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm cursor-pointer">
-            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            New Category
-          </button>
-        </div>
-
-        <!-- Matrix Table -->
+      <!-- CATEGORY BREAKDOWN TABLE -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <h2 class="text-lg font-bold text-slate-900 mb-4 uppercase">Category Overview</h2>
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left text-xs">
             <thead>
-              <tr class="bg-slate-50/70 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                <th class="py-3.5 px-6">Category & Scope</th>
-                <th class="py-3.5 px-6 text-right">Annual Target</th>
-                <th class="py-3.5 px-6 text-right">Monthly Target</th>
-                <th class="py-3.5 px-6 text-right">Money Given</th>
-                <th class="py-3.5 px-6 text-right">Money Spent</th>
-                <th class="py-3.5 px-6 text-right">Remaining</th>
-                <th class="py-3.5 px-6 text-center">Manage</th>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase">
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4 text-right">Allotted (GHS)</th>
+                <th class="py-3 px-4 text-right">Spent (GHS)</th>
+                <th class="py-3 px-4 text-right">Remaining (GHS)</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 text-xs font-medium">
+            <tbody class="divide-y divide-slate-100">
               <template x-for="cat in categories" :key="cat.id">
-                <tr class="hover:bg-slate-50/60 transition">
-                  <!-- Name & Scope -->
-                  <td class="py-4 px-6">
-                    <div class="flex items-center space-x-2">
-                      <span class="font-bold text-slate-900 text-sm" x-text="cat.name"></span>
-                      <template x-if="cat.isLumpSum">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
-                          Annual Lump-sum
-                        </span>
-                      </template>
-                    </div>
-                    <p class="text-slate-400 text-[11px] mt-0.5" x-text="cat.description"></p>
-                  </td>
-
-                  <!-- Annual Target -->
-                  <td class="py-4 px-6 text-right font-bold text-slate-800" x-text="formatCurrency(cat.annualTarget)"></td>
-
-                  <!-- Monthly Target -->
-                  <td class="py-4 px-6 text-right font-medium text-slate-500">
-                    <span x-text="cat.isLumpSum ? 'N/A (Lump-sum)' : formatCurrency(cat.annualTarget / 12) + '/mo'"></span>
-                  </td>
-
-                  <!-- Money Given -->
-                  <td class="py-4 px-6 text-right font-bold text-emerald-600" x-text="formatCurrency(getCategoryAllotments(cat.id))"></td>
-
-                  <!-- Money Spent -->
-                  <td class="py-4 px-6 text-right font-bold text-amber-600" x-text="formatCurrency(getCategorySpent(cat.id))"></td>
-
-                  <!-- Remaining -->
-                  <td class="py-4 px-6 text-right font-bold text-teal-700" x-text="formatCurrency(getCategoryAllotments(cat.id) - getCategorySpent(cat.id))"></td>
-
-                  <!-- Actions -->
-                  <td class="py-4 px-6 text-center">
-                    <div class="flex items-center justify-center space-x-2">
-                      <button @click="editCategory(cat)" class="text-teal-700 hover:text-teal-900 font-bold text-xs inline-flex items-center cursor-pointer">
-                        ✏️ Edit
-                      </button>
-                      <button @click="confirmDeleteCategory(cat)" class="text-rose-600 hover:text-rose-800 font-bold text-xs inline-flex items-center ml-2 cursor-pointer">
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-bold text-slate-900" x-text="cat.name"></td>
+                  <td class="py-3 px-4 text-right font-semibold text-teal-700" x-text="formatCurrency(getCategoryAllotted(cat.id))"></td>
+                  <td class="py-3 px-4 text-right font-semibold text-amber-600" x-text="formatCurrency(getCategorySpent(cat.id))"></td>
+                  <td class="py-3 px-4 text-right font-extrabold" :class="(getCategoryAllotted(cat.id) - getCategorySpent(cat.id)) >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="formatCurrency(getCategoryAllotted(cat.id) - getCategorySpent(cat.id))"></td>
                 </tr>
               </template>
             </tbody>
-            <!-- Dark Grand Total Footer -->
-            <tfoot>
-              <tr class="bg-slate-900 text-white font-bold text-sm">
-                <td class="py-5 px-6">
-                  <div class="text-base font-extrabold">Grand Total</div>
-                  <p class="text-slate-400 text-xs font-normal">All Budget Categories (<span x-text="selectedYear"></span>)</p>
-                </td>
-                <td class="py-5 px-6 text-right text-emerald-400 font-extrabold" x-text="formatCurrency(calculateGrandTarget())"></td>
-                <td class="py-5 px-6 text-right text-slate-400">-</td>
-                <td class="py-5 px-6 text-right text-emerald-400 font-extrabold" x-text="formatCurrency(calculateTotalAllotments())"></td>
-                <td class="py-5 px-6 text-right text-amber-400 font-extrabold" x-text="formatCurrency(calculateTotalSpent())"></td>
-                <td class="py-5 px-6 text-right text-teal-300 font-extrabold" x-text="formatCurrency(calculateTotalAllotments() - calculateTotalSpent())"></td>
-                <td></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- TAB 2: MONTHLY TRACKER -->
-    <div x-show="activeTab === 'monthly'" class="space-y-6">
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 class="text-lg font-bold text-slate-900 uppercase">Monthly Performance Tracker</h2>
-            <p class="text-xs text-slate-500">Compare fixed monthly target baselines against live actual spending</p>
-          </div>
-          <!-- Month Selector -->
-          <div class="flex items-center space-x-2">
-            <label class="text-xs font-bold text-slate-500 uppercase">Month:</label>
-            <select x-model="selectedMonth" class="bg-slate-50 border border-slate-300 text-xs font-bold rounded-lg px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-teal-500 cursor-pointer">
-              <template x-for="(m, idx) in monthNames" :key="idx">
-                <option :value="idx" x-text="m"></option>
-              </template>
-            </select>
-          </div>
-        </div>
+    <!-- TAB 2: CATEGORIES -->
+    <div x-show="activeTab === 'categories'" class="space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs max-w-xl mx-auto">
+        <h2 class="text-lg font-bold text-slate-900 mb-4 uppercase">Manage Budget Categories</h2>
+        
+        <form @submit.prevent="addCategory()" class="flex gap-2 mb-6">
+          <input type="text" x-model="newCategoryName" placeholder="e.g., Groceries, Utilities" required class="flex-1 bg-white border border-slate-300 rounded-lg text-xs p-2.5 font-semibold focus:ring-2 focus:ring-teal-500 outline-none">
+          <button type="submit" class="bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs px-4 rounded-lg transition cursor-pointer">+ Add Category</button>
+        </form>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <ul class="divide-y divide-slate-100">
           <template x-for="cat in categories" :key="cat.id">
-            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition shadow-2xs">
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="font-bold text-slate-900 text-sm" x-text="cat.name"></h3>
-                  <span class="text-[10px] text-slate-400 uppercase font-semibold" x-text="cat.isLumpSum ? 'Annual Lump-sum' : 'Monthly Baseline'"></span>
-                </div>
-                <!-- Status Badge -->
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
-                      :class="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
-                  <span x-text="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'In Budget' : 'Over Budget'"></span>
-                </span>
-              </div>
-
-              <!-- Progress Bar -->
-              <div class="mt-3">
-                <div class="flex justify-between text-xs font-bold mb-1">
-                  <span class="text-slate-500">Spent: <span class="text-slate-900" x-text="formatCurrency(getMonthlySpent(cat.id))"></span></span>
-                  <span class="text-slate-500">Target: <span class="text-slate-900" x-text="formatCurrency(cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12)"></span></span>
-                </div>
-                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                  <div class="h-2 rounded-full transition-all duration-300"
-                       :class="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'bg-teal-600' : 'bg-rose-500'"
-                       :style="`width: ${Math.min(100, (getMonthlySpent(cat.id) / (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12)) * 100)}%`">
-                  </div>
-                </div>
-              </div>
-            </div>
+            <li class="py-3 flex items-center justify-between">
+              <span class="font-bold text-xs text-slate-800" x-text="cat.name"></span>
+              <button @click="deleteCategory(cat.id)" class="text-rose-600 hover:text-rose-800 text-xs font-bold cursor-pointer">Delete</button>
+            </li>
           </template>
-        </div>
+        </ul>
       </div>
     </div>
 
     <!-- TAB 3: ALLOTMENTS -->
     <div x-show="activeTab === 'allotments'" class="space-y-6">
       <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-lg font-bold text-slate-900 uppercase">Log Funding / Allotment</h2>
-            <p class="text-xs text-slate-500">Record money deposited into the Stanbic Joint Account</p>
-          </div>
-        </div>
+        <h2 class="text-lg font-bold text-slate-900 uppercase mb-2">Fund Allotment / Deposit</h2>
+        <p class="text-xs text-slate-500 mb-6">Allocate income funds to specific budget categories</p>
 
-        <!-- Add Allotment Form -->
-        <form @submit.prevent="saveAllotment()" class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+        <!-- Form -->
+        <form @submit.prevent="saveAllotment()" class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
           <div>
             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
             <select x-model="allotmentForm.categoryId" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
@@ -320,17 +118,21 @@
             <input type="number" step="0.01" min="0.01" x-model.number="allotmentForm.amount" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="0.00">
           </div>
           <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Note / Source</label>
+            <input type="text" x-model="allotmentForm.description" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="e.g., Monthly Allotment">
+          </div>
+          <div>
             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
             <input type="date" x-model="allotmentForm.date" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
           </div>
           <div class="flex items-end">
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs cursor-pointer">
-              + Save Allotment
+            <button type="submit" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs cursor-pointer">
+              + Add Allotment
             </button>
           </div>
         </form>
 
-        <!-- Allotments List with Interactive Sort Headers -->
+        <!-- Allotment Table -->
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
@@ -341,6 +143,7 @@
                 <th @click="toggleSort('category')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
                   Category <span x-text="sortField === 'category' ? (sortAsc ? '▲' : '▼') : ''"></span>
                 </th>
+                <th class="py-3 px-4">Note</th>
                 <th @click="toggleSort('amount')" class="py-3 px-4 text-right hover:text-teal-700 cursor-pointer">
                   Amount <span x-text="sortField === 'amount' ? (sortAsc ? '▲' : '▼') : ''"></span>
                 </th>
@@ -348,8 +151,385 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <template x-for="item in filteredAllotments" :key="item.id">
+              <template x-for="item in sortedAllotments" :key="item.id">
                 <tr class="hover:bg-slate-50">
                   <td class="py-3 px-4 font-semibold text-slate-600" x-text="item.date"></td>
                   <td class="py-3 px-4 font-bold text-slate-900" x-text="getCategoryName(item.categoryId)"></td>
-                  <td class="py-3 px-4 text-right font-extrabold text-emerald-600" x-text="formatCu
+                  <td class="py-3 px-4 text-slate-600" x-text="item.description"></td>
+                  <td class="py-3 px-4 text-right font-extrabold text-teal-700" x-text="formatCurrency(item.amount)"></td>
+                  <td class="py-3 px-4 text-center">
+                    <div class="flex items-center justify-center space-x-3">
+                      <button type="button" @click="editAllotment(item)" class="text-teal-700 hover:text-teal-900 font-bold cursor-pointer underline">Edit</button>
+                      <button type="button" @click="deleteAllotment(item.id)" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: TRANSACTIONS -->
+    <div x-show="activeTab === 'transactions'" class="space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <h2 class="text-lg font-bold text-slate-900 uppercase mb-2">Log Expense / Outflow</h2>
+        <p class="text-xs text-slate-500 mb-6">Record money spent from joint account</p>
+
+        <!-- Form -->
+        <form @submit.prevent="saveExpense()" class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
+            <select x-model="expenseForm.categoryId" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+              <option value="">Select Category</option>
+              <template x-for="cat in categories" :key="cat.id">
+                <option :value="cat.id" x-text="cat.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (GHS)</label>
+            <input type="number" step="0.01" min="0.01" x-model.number="expenseForm.amount" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="0.00">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Description</label>
+            <input type="text" x-model="expenseForm.description" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="e.g., Prepaid Topup">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
+            <input type="date" x-model="expenseForm.date" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs cursor-pointer">
+              + Log Expense
+            </button>
+          </div>
+        </form>
+
+        <!-- Expense Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase select-none">
+                <th @click="toggleSort('date')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Date <span x-text="sortField === 'date' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th @click="toggleSort('category')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Category <span x-text="sortField === 'category' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th class="py-3 px-4">Description</th>
+                <th @click="toggleSort('amount')" class="py-3 px-4 text-right hover:text-teal-700 cursor-pointer">
+                  Amount <span x-text="sortField === 'amount' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th class="py-3 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <template x-for="item in sortedExpenses" :key="item.id">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-semibold text-slate-600" x-text="item.date"></td>
+                  <td class="py-3 px-4 font-bold text-slate-900" x-text="getCategoryName(item.categoryId)"></td>
+                  <td class="py-3 px-4 text-slate-600" x-text="item.description"></td>
+                  <td class="py-3 px-4 text-right font-extrabold text-amber-600" x-text="formatCurrency(item.amount)"></td>
+                  <td class="py-3 px-4 text-center">
+                    <div class="flex items-center justify-center space-x-3">
+                      <button type="button" @click="editExpense(item)" class="text-teal-700 hover:text-teal-900 font-bold cursor-pointer underline">Edit</button>
+                      <button type="button" @click="deleteExpense(item.id)" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- EDIT ALLOTMENT MODAL -->
+  <div x-show="showAllotmentModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200" @click.away="showAllotmentModal = false">
+      <h3 class="text-base font-bold text-slate-900 mb-4 uppercase">Edit Allotment</h3>
+      
+      <form @submit.prevent="updateAllotmentModal()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category</label>
+          <select x-model="editingAllotment.categoryId" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+            <option value="">Select Category</option>
+            <template x-for="cat in categories" :key="cat.id">
+              <option :value="cat.id" x-text="cat.name" :selected="cat.id === editingAllotment.categoryId"></option>
+            </template>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Amount (GHS)</label>
+          <input type="number" step="0.01" min="0.01" x-model.number="editingAllotment.amount" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Note / Source</label>
+          <input type="text" x-model="editingAllotment.description" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
+          <input type="date" x-model="editingAllotment.date" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+          <button type="button" @click="showAllotmentModal = false" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-xs cursor-pointer">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT EXPENSE MODAL -->
+  <div x-show="showExpenseModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200" @click.away="showExpenseModal = false">
+      <h3 class="text-base font-bold text-slate-900 mb-4 uppercase">Edit Expense Transaction</h3>
+      
+      <form @submit.prevent="updateExpenseModal()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category</label>
+          <select x-model="editingExpense.categoryId" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+            <option value="">Select Category</option>
+            <template x-for="cat in categories" :key="cat.id">
+              <option :value="cat.id" x-text="cat.name" :selected="cat.id === editingExpense.categoryId"></option>
+            </template>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Amount (GHS)</label>
+          <input type="number" step="0.01" min="0.01" x-model.number="editingExpense.amount" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Description</label>
+          <input type="text" x-model="editingExpense.description" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
+          <input type="date" x-model="editingExpense.date" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+          <button type="button" @click="showExpenseModal = false" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-xs cursor-pointer">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function budgetApp() {
+      return {
+        activeTab: 'dashboard',
+        sortField: 'date',
+        sortAsc: false,
+        
+        categories: JSON.parse(localStorage.getItem('hh_categories') || '[]'),
+        allotments: JSON.parse(localStorage.getItem('hh_allotments') || '[]'),
+        expenses: JSON.parse(localStorage.getItem('hh_expenses') || '[]'),
+
+        newCategoryName: '',
+        
+        allotmentForm: {
+          categoryId: '',
+          amount: '',
+          description: '',
+          date: new Date().toISOString().split('T')[0]
+        },
+
+        expenseForm: {
+          categoryId: '',
+          amount: '',
+          description: '',
+          date: new Date().toISOString().split('T')[0]
+        },
+
+        showAllotmentModal: false,
+        editingAllotment: { id: '', categoryId: '', amount: 0, description: '', date: '' },
+
+        showExpenseModal: false,
+        editingExpense: { id: '', categoryId: '', amount: 0, description: '', date: '' },
+
+        initApp() {
+          if (this.categories.length === 0) {
+            this.categories = [
+              { id: '1', name: 'Groceries & Food' },
+              { id: '2', name: 'Utilities & Bills' },
+              { id: '3', name: 'Maintenance & Repairs' }
+            ];
+            this.saveToStorage();
+          }
+        },
+
+        saveToStorage() {
+          localStorage.setItem('hh_categories', JSON.stringify(this.categories));
+          localStorage.setItem('hh_allotments', JSON.stringify(this.allotments));
+          localStorage.setItem('hh_expenses', JSON.stringify(this.expenses));
+        },
+
+        formatCurrency(val) {
+          return 'GHS ' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        getCategoryName(id) {
+          const cat = this.categories.find(c => c.id === id);
+          return cat ? cat.name : 'Unassigned';
+        },
+
+        getCategoryAllotted(catId) {
+          return this.allotments.filter(a => a.categoryId === catId).reduce((sum, a) => sum + Number(a.amount || 0), 0);
+        },
+
+        getCategorySpent(catId) {
+          return this.expenses.filter(e => e.categoryId === catId).reduce((sum, e) => sum + Number(e.amount || 0), 0);
+        },
+
+        get totalAllotted() {
+          return this.allotments.reduce((sum, a) => sum + Number(a.amount || 0), 0);
+        },
+
+        get totalSpent() {
+          return this.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+        },
+
+        get remainingBalance() {
+          return this.totalAllotted - this.totalSpent;
+        },
+
+        toggleSort(field) {
+          if (this.sortField === field) {
+            this.sortAsc = !this.sortAsc;
+          } else {
+            this.sortField = field;
+            this.sortAsc = true;
+          }
+        },
+
+        sortItems(items) {
+          return [...items].sort((a, b) => {
+            let valA, valB;
+            if (this.sortField === 'category') {
+              valA = this.getCategoryName(a.categoryId).toLowerCase();
+              valB = this.getCategoryName(b.categoryId).toLowerCase();
+            } else if (this.sortField === 'amount') {
+              valA = Number(a.amount || 0);
+              valB = Number(b.amount || 0);
+            } else {
+              valA = a.date || '';
+              valB = b.date || '';
+            }
+
+            if (valA < valB) return this.sortAsc ? -1 : 1;
+            if (valA > valB) return this.sortAsc ? 1 : -1;
+            return 0;
+          });
+        },
+
+        get sortedAllotments() {
+          return this.sortItems(this.allotments);
+        },
+
+        get sortedExpenses() {
+          return this.sortItems(this.expenses);
+        },
+
+        addCategory() {
+          if (!this.newCategoryName.trim()) return;
+          this.categories.push({
+            id: Date.now().toString(),
+            name: this.newCategoryName.trim()
+          });
+          this.newCategoryName = '';
+          this.saveToStorage();
+        },
+
+        deleteCategory(id) {
+          this.categories = this.categories.filter(c => c.id !== id);
+          this.saveToStorage();
+        },
+
+        saveAllotment() {
+          this.allotments.push({
+            id: Date.now().toString(),
+            ...this.allotmentForm,
+            amount: Number(this.allotmentForm.amount)
+          });
+          this.allotmentForm.amount = '';
+          this.allotmentForm.description = '';
+          this.saveToStorage();
+        },
+
+        deleteAllotment(id) {
+          this.allotments = this.allotments.filter(a => a.id !== id);
+          this.saveToStorage();
+        },
+
+        editAllotment(item) {
+          this.editingAllotment = {
+            id: item.id,
+            categoryId: item.categoryId || '',
+            amount: Number(item.amount || 0),
+            description: item.description || '',
+            date: item.date || new Date().toISOString().split('T')[0]
+          };
+          this.showAllotmentModal = true;
+        },
+
+        updateAllotmentModal() {
+          const idx = this.allotments.findIndex(a => a.id === this.editingAllotment.id);
+          if (idx >= 0) {
+            this.allotments[idx] = { ...this.editingAllotment, amount: Number(this.editingAllotment.amount) };
+            this.saveToStorage();
+          }
+          this.showAllotmentModal = false;
+        },
+
+        saveExpense() {
+          this.expenses.push({
+            id: Date.now().toString(),
+            ...this.expenseForm,
+            amount: Number(this.expenseForm.amount)
+          });
+          this.expenseForm.amount = '';
+          this.expenseForm.description = '';
+          this.saveToStorage();
+        },
+
+        deleteExpense(id) {
+          this.expenses = this.expenses.filter(e => e.id !== id);
+          this.saveToStorage();
+        },
+
+        editExpense(item) {
+          this.editingExpense = {
+            id: item.id,
+            categoryId: item.categoryId || '',
+            amount: Number(item.amount || 0),
+            description: item.description || '',
+            date: item.date || new Date().toISOString().split('T')[0]
+          };
+          this.showExpenseModal = true;
+        },
+
+        updateExpenseModal() {
+          const idx = this.expenses.findIndex(e => e.id === this.editingExpense.id);
+          if (idx >= 0) {
+            this.expenses[idx] = { ...this.editingExpense, amount: Number(this.editingExpense.amount) };
+            this.saveToStorage();
+          }
+          this.showExpenseModal = false;
+        }
+      };
+    }
+  </script>
+</body>
+</html>
