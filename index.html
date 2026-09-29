@@ -6,7 +6,9 @@
   <title>Household Budget & Expense Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <style>[x-cloak] { display: none !important; }</style>
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased font-sans min-h-screen pb-12" x-data="budgetApp()" x-init="initApp()">
 
@@ -20,36 +22,36 @@
       
       <!-- TAB NAVIGATION -->
       <nav class="flex space-x-1 bg-slate-800 p-1 rounded-xl text-xs font-bold">
-        <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Dashboard</button>
-        <button @click="activeTab = 'categories'" :class="activeTab === 'categories' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Categories</button>
-        <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Allotments</button>
-        <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Transactions</button>
+        <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Monthly Tracker</button>
+        <button @click="activeTab = 'categories'" :class="activeTab === 'categories' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Categories</button>
+        <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Allotments</button>
+        <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-300 hover:text-white'" class="px-3 py-2 rounded-lg transition cursor-pointer">Transactions</button>
       </nav>
     </div>
   </header>
 
   <main class="max-w-6xl mx-auto px-4 mt-6">
 
-    <!-- TAB 1: DASHBOARD -->
-    <div x-show="activeTab === 'dashboard'" class="space-y-6">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <p class="text-xs font-bold text-slate-500 uppercase">Total Income / Allotted</p>
-          <h3 class="text-2xl font-black text-teal-700 mt-1" x-text="formatCurrency(totalAllotted)"></h3>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <p class="text-xs font-bold text-slate-500 uppercase">Total Expenses</p>
-          <h3 class="text-2xl font-black text-amber-600 mt-1" x-text="formatCurrency(totalSpent)"></h3>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <p class="text-xs font-bold text-slate-500 uppercase">Remaining Balance</p>
-          <h3 class="text-2xl font-black mt-1" :class="remainingBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="formatCurrency(remainingBalance)"></h3>
-        </div>
+    <!-- SUMMARY CARDS HEADER -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Income / Allotted</p>
+        <h3 class="text-2xl font-black text-teal-700 mt-1" x-text="formatCurrency(totalAllotted)"></h3>
       </div>
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Outflow</p>
+        <h3 class="text-2xl font-black text-amber-600 mt-1" x-text="formatCurrency(totalSpent)"></h3>
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Stanbic Account Balance</p>
+        <h3 class="text-2xl font-black mt-1" :class="remainingBalance >= 0 ? 'text-teal-700' : 'text-rose-600'" x-text="formatCurrency(remainingBalance)"></h3>
+      </div>
+    </div>
 
-      <!-- CATEGORY BREAKDOWN TABLE -->
+    <!-- TAB 1: DASHBOARD / MONTHLY TRACKER -->
+    <div x-show="activeTab === 'dashboard'" class="space-y-6">
       <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <h2 class="text-lg font-bold text-slate-900 mb-4 uppercase">Category Overview</h2>
+        <h2 class="text-lg font-bold text-slate-900 mb-4 uppercase">Category Breakdown</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
@@ -102,7 +104,6 @@
         <h2 class="text-lg font-bold text-slate-900 uppercase mb-2">Fund Allotment / Deposit</h2>
         <p class="text-xs text-slate-500 mb-6">Allocate income funds to specific budget categories</p>
 
-        <!-- Form -->
         <form @submit.prevent="saveAllotment()" class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
           <div>
             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
@@ -132,7 +133,6 @@
           </div>
         </form>
 
-        <!-- Allotment Table -->
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
@@ -175,9 +175,8 @@
     <div x-show="activeTab === 'transactions'" class="space-y-6">
       <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
         <h2 class="text-lg font-bold text-slate-900 uppercase mb-2">Log Expense / Outflow</h2>
-        <p class="text-xs text-slate-500 mb-6">Record money spent from joint account</p>
+        <p class="text-xs text-slate-500 mb-6">Record money spent from Stanbic Joint Account</p>
 
-        <!-- Form -->
         <form @submit.prevent="saveExpense()" class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
           <div>
             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
@@ -207,7 +206,6 @@
           </div>
         </form>
 
-        <!-- Expense Table -->
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
@@ -251,12 +249,15 @@
   <!-- EDIT ALLOTMENT MODAL -->
   <div x-show="showAllotmentModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200" @click.away="showAllotmentModal = false">
-      <h3 class="text-base font-bold text-slate-900 mb-4 uppercase">Edit Allotment</h3>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-sm font-bold text-slate-900 uppercase">Edit Allotment</h3>
+        <button @click="showAllotmentModal = false" class="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">&times;</button>
+      </div>
       
       <form @submit.prevent="updateAllotmentModal()" class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category</label>
-          <select x-model="editingAllotment.categoryId" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+          <select x-model="editingAllotment.categoryId" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
             <option value="">Select Category</option>
             <template x-for="cat in categories" :key="cat.id">
               <option :value="cat.id" x-text="cat.name" :selected="cat.id === editingAllotment.categoryId"></option>
@@ -266,17 +267,17 @@
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Amount (GHS)</label>
-          <input type="number" step="0.01" min="0.01" x-model.number="editingAllotment.amount" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+          <input type="number" step="0.01" min="0.01" x-model.number="editingAllotment.amount" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Note / Source</label>
-          <input type="text" x-model="editingAllotment.description" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+          <input type="text" x-model="editingAllotment.description" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
-          <input type="date" x-model="editingAllotment.date" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+          <input type="date" x-model="editingAllotment.date" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
         </div>
 
         <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
@@ -287,15 +288,18 @@
     </div>
   </div>
 
-  <!-- EDIT EXPENSE MODAL -->
+  <!-- EDIT TRANSACTIONS / EXPENSE MODAL -->
   <div x-show="showExpenseModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200" @click.away="showExpenseModal = false">
-      <h3 class="text-base font-bold text-slate-900 mb-4 uppercase">Edit Expense Transaction</h3>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-sm font-bold text-slate-900 uppercase">Edit Expense Transaction</h3>
+        <button @click="showExpenseModal = false" class="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">&times;</button>
+      </div>
       
       <form @submit.prevent="updateExpenseModal()" class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category</label>
-          <select x-model="editingExpense.categoryId" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+          <select x-model="editingExpense.categoryId" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
             <option value="">Select Category</option>
             <template x-for="cat in categories" :key="cat.id">
               <option :value="cat.id" x-text="cat.name" :selected="cat.id === editingExpense.categoryId"></option>
@@ -305,17 +309,17 @@
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Amount (GHS)</label>
-          <input type="number" step="0.01" min="0.01" x-model.number="editingExpense.amount" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+          <input type="number" step="0.01" min="0.01" x-model.number="editingExpense.amount" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Description</label>
-          <input type="text" x-model="editingExpense.description" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+          <input type="text" x-model="editingExpense.description" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
-          <input type="date" x-model="editingExpense.date" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+          <input type="date" x-model="editingExpense.date" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
         </div>
 
         <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
@@ -329,7 +333,7 @@
   <script>
     function budgetApp() {
       return {
-        activeTab: 'dashboard',
+        activeTab: 'transactions',
         sortField: 'date',
         sortAsc: false,
         
@@ -377,7 +381,7 @@
         },
 
         formatCurrency(val) {
-          return 'GHS ' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          return 'GH₵ ' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
 
         getCategoryName(id) {
@@ -484,12 +488,23 @@
           this.showAllotmentModal = true;
         },
 
-        updateAllotmentModal() {
+        async updateAllotmentModal() {
           const idx = this.allotments.findIndex(a => a.id === this.editingAllotment.id);
           if (idx >= 0) {
             this.allotments[idx] = { ...this.editingAllotment, amount: Number(this.editingAllotment.amount) };
             this.saveToStorage();
           }
+
+          if (window.db && window.firestoreTools) {
+            const { doc, setDoc } = window.firestoreTools;
+            await setDoc(doc(window.db, 'households', this.householdId || 'default', 'allotments', this.editingAllotment.id), {
+              categoryId: this.editingAllotment.categoryId,
+              amount: Number(this.editingAllotment.amount),
+              description: this.editingAllotment.description,
+              date: this.editingAllotment.date
+            }, { merge: true });
+          }
+
           this.showAllotmentModal = false;
         },
 
@@ -520,12 +535,23 @@
           this.showExpenseModal = true;
         },
 
-        updateExpenseModal() {
+        async updateExpenseModal() {
           const idx = this.expenses.findIndex(e => e.id === this.editingExpense.id);
           if (idx >= 0) {
             this.expenses[idx] = { ...this.editingExpense, amount: Number(this.editingExpense.amount) };
             this.saveToStorage();
           }
+
+          if (window.db && window.firestoreTools) {
+            const { doc, setDoc } = window.firestoreTools;
+            await setDoc(doc(window.db, 'households', this.householdId || 'default', 'expenses', this.editingExpense.id), {
+              categoryId: this.editingExpense.categoryId,
+              amount: Number(this.editingExpense.amount),
+              description: this.editingExpense.description,
+              date: this.editingExpense.date
+            }, { merge: true });
+          }
+
           this.showExpenseModal = false;
         }
       };
