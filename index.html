@@ -488,9 +488,10 @@
       return {
         householdId: 'fam-default',
         activeTab: 'overview',
-        selectedYear: '2027',
+        // FIX #1: Dynamically default selected year to current year instead of future hardcoded 2027
+        selectedYear: new Date().getFullYear().toString(),
         selectedMonth: new Date().getMonth().toString(),
-        years: ['2026', '2027', '2028'],
+        years: ['2025', '2026', '2027', '2028'],
         monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
         
         isOnline: navigator.onLine,
@@ -553,7 +554,7 @@
             if (!snapshot.empty) {
               this.categories = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             } else {
-              // Seed initial hardcoded categories to Firestore so they are not lost
+              // Seed initial hardcoded categories to Firestore so they are not wiped out
               for (const cat of this.categories) {
                 await setDoc(doc(window.db, 'households', this.householdId, 'categories', cat.id), cat);
               }
@@ -591,12 +592,16 @@
           this.pendingSyncCount = this.getOfflineQueue().length;
         },
         async queueOrSave(colName, payload) {
+          // FIX #4: Ensure offline item has a unique temp id so Alpine x-for keys don't duplicate/break
+          const tempId = 'temp-' + Date.now();
+          const itemWithId = { ...payload, id: tempId };
+
           if (!this.isOnline) {
             const queue = this.getOfflineQueue();
-            queue.push({ colName, payload, id: 'temp-' + Date.now() });
+            queue.push({ colName, payload: itemWithId, id: tempId });
             this.saveOfflineQueue(queue);
-            if (colName === 'allotments') this.allotments.push(payload);
-            if (colName === 'expenses') this.expenses.push(payload);
+            if (colName === 'allotments') this.allotments.push(itemWithId);
+            if (colName === 'expenses') this.expenses.push(itemWithId);
             return;
           }
 
@@ -610,7 +615,8 @@
           const { collection, addDoc } = window.firestoreTools;
           for (const item of queue) {
             try {
-              await addDoc(collection(window.db, 'households', this.householdId, item.colName), item.payload);
+              const { id, ...cleanPayload } = item.payload; // Strip temp offline ID before Firestore write
+              await addDoc(collection(window.db, 'households', this.householdId, item.colName), cleanPayload);
             } catch (e) {
               console.error("Failed to sync queue item:", e);
             }
@@ -621,7 +627,10 @@
 
         // COMPUTED / SORTED LISTS
         get filteredAllotments() {
-          let list = this.allotments.filter(a => new Date(a.date).getFullYear().toString() === this.selectedYear);
+          let list = this.allotments.filter(a => {
+            if (!a.date) return false;
+            return a.date.split('-')[0] === this.selectedYear;
+          });
           return list.sort((a, b) => {
             let modifier = this.sortAsc ? 1 : -1;
             if (this.sortField === 'date') return (new Date(a.date) - new Date(b.date)) * modifier;
@@ -635,7 +644,10 @@
           });
         },
         get filteredExpenses() {
-          let list = this.expenses.filter(e => new Date(e.date).getFullYear().toString() === this.selectedYear);
+          let list = this.expenses.filter(e => {
+            if (!e.date) return false;
+            return e.date.split('-')[0] === this.selectedYear;
+          });
           return list.sort((a, b) => {
             let modifier = this.sortAsc ? 1 : -1;
             if (this.sortField === 'date') return (new Date(a.date) - new Date(b.date)) * modifier;
@@ -653,28 +665,32 @@
           return c ? c.name : 'Unknown';
         },
         getCategoryAllotments(catId) {
-          return this.allotments
-            .filter(a => a.categoryId === catId && new Date(a.date).getFullYear().toString() === this.selectedYear)
+          return this.filteredAllotments
+            .filter(a => a.categoryId === catId)
             .reduce((sum, a) => sum + Number(a.amount || 0), 0);
         },
         getCategorySpent(catId) {
-          return this.expenses
-            .filter(e => e.categoryId === catId && new Date(e.date).getFullYear().toString() === this.selectedYear)
+          return this.filteredExpenses
+            .filter(e => e.categoryId === catId)
             .reduce((sum, e) => sum + Number(e.amount || 0), 0);
         },
+
+        // FIX #3: Parse local string YYYY-MM-DD directly to prevent timezone shift off-by-one errors
         getMonthlySpent(catId) {
+          const selectedMonthNum = (Number(this.selectedMonth) + 1).toString().padStart(2, '0');
           return this.expenses
             .filter(e => {
-              const d = new Date(e.date);
-              return e.categoryId === catId && 
-                     d.getFullYear().toString() === this.selectedYear && 
-                     d.getMonth().toString() === this.selectedMonth;
+              if (e.categoryId !== catId || !e.date) return false;
+              const [year, month] = e.date.split('-');
+              return year === this.selectedYear && month === selectedMonthNum;
             })
             .reduce((sum, e) => sum + Number(e.amount || 0), 0);
         },
         calculateGrandTarget() {
           return this.categories.reduce((sum, c) => sum + Number(c.annualTarget || 0), 0);
         },
+
+        // FIX #2: Header summaries consistently calculate from current selected year filters
         calculateTotalAllotments() {
           return this.filteredAllotments.reduce((sum, a) => sum + Number(a.amount || 0), 0);
         },
