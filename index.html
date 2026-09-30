@@ -1,32 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Budget Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
-        .serif-title { font-family: 'Playfair Display', Georgia, serif; }
-        [x-cloak] { display: none !important; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Budget - Stanbic Joint Account Hub</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
+    }
+    [x-cloak] { display: none !important; }
+  </style>
 </head>
-<body class="bg-[#faf9f6] text-slate-800 antialiased font-sans" x-data="budgetApp" x-cloak>
 
-    <header class="sticky top-0 z-50 bg-white border-b border-teal-600/20 shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-            <div class="flex items-center space-x-8">
-                <h1 class="text-2xl font-black tracking-tight text-[#b22222] serif-title">FAMILY BUDGET</h1>
-                <nav class="flex space-x-3 bg-slate-100/80 p-1.5 rounded-full border border-slate-200">
-                    <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-[#008080] text-white' : 'text-slate-600 hover:text-slate-900'" class="px-5 py-2 text-sm font-bold rounded-full transition-all cursor-pointer">📊 Dashboard</button>
-                    <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-[#008080] text-white' : 'text-slate-600 hover:text-slate-900'" class="px-5 py-2 text-sm font-bold rounded-full transition-all cursor-pointer">➕ Allotments</button>
-                    <button @click="activeTab = 'expenses'" :class="activeTab === 'expenses' ? 'bg-[#008080] text-white' : 'text-slate-600 hover:text-slate-900'" class="px-5 py-2 text-sm font-bold rounded-full transition-all cursor-pointer">💸 Transactions</button>
-                </nav>
-            </div>
+<body x-data="budgetApp" x-cloak class="text-slate-800 antialiased min-h-screen pb-16">  <!-- TOP HEADER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
         </div>
-    </header>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight text-slate-900 leading-none uppercase">Family Budget</h1>
+          <p class="text-xs font-semibold text-slate-400 tracking-wider uppercase mt-1">Stanbic Joint Account Hub</p>
+        </div>
+      </div>
 
-    <main class="max-w-7xl mx-auto px-4 py-10">
+      <!-- Sync Status & Export -->
+      <div class="flex items-center space-x-3">
+        <!-- Offline / Online Indicator -->
+        <span x-cloak class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+              :class="isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
+          <span class="w-2 h-2 rounded-full mr-1.5" :class="isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
+          <span x-text="isOnline ? (pendingSyncCount > 0 ? `Syncing (${pendingSyncCount})...` : 'Live Synced') : `Offline (${pendingSyncCount} saved)`"></span>
+        </span>
+
+        <!-- CSV Export Button -->
+        <button @click="exportToCSV()" class="inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 shadow-xs transition cursor-pointer">
+          <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Export CSV
+        </button>
+
+        <!-- Year-specific navigation -->
+        <template x-if="selectedYear === '2026'">
+          <nav class="flex bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+            <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">📊 Dashboard</button>
+            <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">➕ Allotments</button>
+            <button @click="activeTab = 'expenses'" :class="activeTab === 'expenses' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">💸 Transactions</button>
+          </nav>
+        </template>
+        <template x-if="selectedYear !== '2026'">
+          <nav class="flex bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+            <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">📊 Overview</button>
+            <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">📅 Monthly Tracker</button>
+            <button @click="activeTab = 'allotments'" :class="activeTab === 'allotments' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">➕ Allotments</button>
+            <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">💸 Transactions</button>
+          </nav>
+        </template>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div class="flex items-center space-x-3">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Selected Year:</label>
+        <select x-model="selectedYear" class="bg-white border border-slate-300 font-extrabold text-slate-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-teal-500 shadow-xs cursor-pointer">
+          <template x-for="yr in getAvailableYears()" :key="yr">
+            <option :value="yr" x-text="yr"></option>
+          </template>
+        </select>
+      </div>
+      <div class="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-xs flex items-center space-x-6 text-xs">
+        <div><span class="text-slate-400 font-semibold block uppercase text-[10px]">Total Funding</span><span class="font-bold text-emerald-600 text-sm" x-text="formatCurrency(getYearTotalAllotments())"></span></div>
+        <div class="h-6 border-r border-slate-200"></div>
+        <div><span class="text-slate-400 font-semibold block uppercase text-[10px]">Total Outflow</span><span class="font-bold text-amber-600 text-sm" x-text="formatCurrency(getYearTotalSpent())"></span></div>
+        <div class="h-6 border-r border-slate-200"></div>
+        <div><span class="text-slate-400 font-semibold block uppercase text-[10px]">Stanbic Account Balance</span><span class="font-extrabold text-teal-700 text-sm" x-text="formatCurrency(getYearTotalAllotments() - getYearTotalSpent())"></span></div>
+      </div>
+    </div>
+    <div x-show="selectedYear === '2026'">
+<div class="space-y-8">
 
         <!-- ── DASHBOARD (SINGLE POINT OF YEAR SELECTION) ── -->
         <div x-show="activeTab === 'dashboard'" class="space-y-8">
@@ -326,330 +393,818 @@
             </div>
         </div>
 
-    </main>
+    </div>
+    </div>
+    <div x-show="selectedYear !== '2026'" class="space-y-8">
+    <!-- TAB 1: OVERVIEW (CATEGORY MATRIX) -->
+    <div x-show="activeTab === 'overview'" class="space-y-6">
+      
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <!-- Matrix Header -->
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 uppercase tracking-tight">
+              Main Category Matrix (<span x-text="selectedYear"></span>)
+            </h2>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">Edit targets, manage category details, and monitor current status</p>
+          </div>
+          <button @click="openCategoryModal()" class="inline-flex items-center bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm cursor-pointer">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Category
+          </button>
+        </div>
 
-    <script type="module">
-    import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore,
-             doc, collection,
-             addDoc, updateDoc, deleteDoc, setDoc,
-             onSnapshot,
-             serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import Alpine              from 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/module.esm.js';
+        <!-- Matrix Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/70 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                <th class="py-3.5 px-6">Category & Scope</th>
+                <th class="py-3.5 px-6 text-right">Annual Target</th>
+                <th class="py-3.5 px-6 text-right">Monthly Target</th>
+                <th class="py-3.5 px-6 text-right">Money Given</th>
+                <th class="py-3.5 px-6 text-right">Money Spent</th>
+                <th class="py-3.5 px-6 text-right">Remaining</th>
+                <th class="py-3.5 px-6 text-center">Manage</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-xs font-medium">
+              <template x-for="cat in categories" :key="cat.id">
+                <tr class="hover:bg-slate-50/60 transition">
+                  <!-- Name & Scope -->
+                  <td class="py-4 px-6">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-bold text-slate-900 text-sm" x-text="cat.name"></span>
+                      <template x-if="cat.isLumpSum">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                          Annual Lump-sum
+                        </span>
+                      </template>
+                    </div>
+                    <p class="text-slate-400 text-[11px] mt-0.5" x-text="cat.description"></p>
+                  </td>
 
-    // ── Firebase config ────────────────────────────────────────────
+                  <!-- Annual Target -->
+                  <td class="py-4 px-6 text-right font-bold text-slate-800" x-text="formatCurrency(cat.annualTarget)"></td>
+
+                  <!-- Monthly Target -->
+                  <td class="py-4 px-6 text-right font-medium text-slate-500">
+                    <span x-text="cat.isLumpSum ? 'N/A (Lump-sum)' : formatCurrency(cat.annualTarget / 12) + '/mo'"></span>
+                  </td>
+
+                  <!-- Money Given -->
+                  <td class="py-4 px-6 text-right font-bold text-emerald-600" x-text="formatCurrency(getCategoryAllotments(cat.id))"></td>
+
+                  <!-- Money Spent -->
+                  <td class="py-4 px-6 text-right font-bold text-amber-600" x-text="formatCurrency(getCategorySpent(cat.id))"></td>
+
+                  <!-- Remaining -->
+                  <td class="py-4 px-6 text-right font-bold text-teal-700" x-text="formatCurrency(getCategoryAllotments(cat.id) - getCategorySpent(cat.id))"></td>
+
+                  <!-- Actions -->
+                  <td class="py-4 px-6 text-center">
+                    <div class="flex items-center justify-center space-x-2">
+                      <button @click="editCategory(cat)" class="text-teal-700 hover:text-teal-900 font-bold text-xs inline-flex items-center cursor-pointer">
+                        ✏️ Edit
+                      </button>
+                      <button @click="confirmDeleteCategory(cat)" class="text-rose-600 hover:text-rose-800 font-bold text-xs inline-flex items-center ml-2 cursor-pointer">
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+            <!-- Dark Grand Total Footer -->
+            <tfoot>
+              <tr class="bg-slate-900 text-white font-bold text-sm">
+                <td class="py-5 px-6">
+                  <div class="text-base font-extrabold">Grand Total</div>
+                  <p class="text-slate-400 text-xs font-normal">All Budget Categories (<span x-text="selectedYear"></span>)</p>
+                </td>
+                <td class="py-5 px-6 text-right text-emerald-400 font-extrabold" x-text="formatCurrency(calculateGrandTarget())"></td>
+                <td class="py-5 px-6 text-right text-slate-400">-</td>
+                <td class="py-5 px-6 text-right text-emerald-400 font-extrabold" x-text="formatCurrency(calculateTotalAllotments())"></td>
+                <td class="py-5 px-6 text-right text-amber-400 font-extrabold" x-text="formatCurrency(calculateTotalSpent())"></td>
+                <td class="py-5 px-6 text-right text-teal-300 font-extrabold" x-text="formatCurrency(calculateTotalAllotments() - calculateTotalSpent())"></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: MONTHLY TRACKER -->
+    <div x-show="activeTab === 'monthly'" class="space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 uppercase">Monthly Performance Tracker</h2>
+            <p class="text-xs text-slate-500">Compare fixed monthly target baselines against live actual spending</p>
+          </div>
+          <!-- Month Selector -->
+          <div class="flex items-center space-x-2">
+            <label class="text-xs font-bold text-slate-500 uppercase">Month:</label>
+            <select x-model="selectedMonth" class="bg-slate-50 border border-slate-300 text-xs font-bold rounded-lg px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-teal-500 cursor-pointer">
+              <template x-for="(m, idx) in monthNames" :key="idx">
+                <option :value="idx" x-text="m"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <template x-for="cat in categories" :key="cat.id">
+            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition shadow-2xs">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-sm" x-text="cat.name"></h3>
+                  <span class="text-[10px] text-slate-400 uppercase font-semibold" x-text="cat.isLumpSum ? 'Annual Lump-sum' : 'Monthly Baseline'"></span>
+                </div>
+                <!-- Status Badge -->
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+                      :class="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+                  <span x-text="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'In Budget' : 'Over Budget'"></span>
+                </span>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="mt-3">
+                <div class="flex justify-between text-xs font-bold mb-1">
+                  <span class="text-slate-500">Spent: <span class="text-slate-900" x-text="formatCurrency(getMonthlySpent(cat.id))"></span></span>
+                  <span class="text-slate-500">Target: <span class="text-slate-900" x-text="formatCurrency(cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12)"></span></span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div class="h-2 rounded-full transition-all duration-300"
+                       :class="getMonthlySpent(cat.id) <= (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12) ? 'bg-teal-600' : 'bg-rose-500'"
+                       :style="`width: ${Math.min(100, (getMonthlySpent(cat.id) / (cat.isLumpSum ? cat.annualTarget : cat.annualTarget / 12)) * 100)}%`">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: ALLOTMENTS -->
+    <div x-show="activeTab === 'allotments'" class="space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 uppercase" x-text="editingAllotment ? 'Edit Funding / Allotment' : 'Log Funding / Allotment'"></h2>
+            <p class="text-xs text-slate-500">Record money deposited into the Stanbic Joint Account</p>
+          </div>
+        </div>
+
+        <!-- Add Allotment Form -->
+        <form @submit.prevent="saveAllotment()" class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
+            <select x-model="allotmentForm.categoryId" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+              <option value="">Select Category</option>
+              <template x-for="cat in categories" :key="cat.id">
+                <option :value="cat.id" x-text="cat.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (GHS)</label>
+            <input type="number" step="0.01" min="0.01" x-model.number="allotmentForm.amount" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="0.00">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
+            <input type="date" x-model="allotmentForm.date" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs cursor-pointer">
+              <span x-text="editingAllotment ? '✓ Update Allotment' : '+ Save Allotment'"></span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Allotments List with Interactive Sort Headers -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase select-none">
+                <th @click="toggleSort('date')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Date <span x-text="sortField === 'date' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th @click="toggleSort('category')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Category <span x-text="sortField === 'category' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th @click="toggleSort('amount')" class="py-3 px-4 text-right hover:text-teal-700 cursor-pointer">
+                  Amount <span x-text="sortField === 'amount' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th class="py-3 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <template x-for="item in filteredAllotments" :key="item.id">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-semibold text-slate-600" x-text="item.date"></td>
+                  <td class="py-3 px-4 font-bold text-slate-900" x-text="getCategoryName(item.categoryId)"></td>
+                  <td class="py-3 px-4 text-right font-extrabold text-emerald-600" x-text="formatCurrency(item.amount)"></td>
+                  <td class="py-3 px-4 text-center">
+                    <div class="flex items-center justify-center gap-3">
+                      <button @click="editAllotment(item)" class="text-teal-700 hover:text-teal-900 font-bold cursor-pointer">Edit</button>
+                      <button @click="deleteAllotment(item.id)" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: TRANSACTIONS -->
+    <div x-show="activeTab === 'transactions'" class="space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 uppercase" x-text="editingExpense ? 'Edit Expense / Outflow' : 'Log Expense / Outflow'"></h2>
+            <p class="text-xs text-slate-500">Record money spent from the Stanbic Joint Account</p>
+          </div>
+        </div>
+
+        <!-- Expense Form -->
+        <form @submit.prevent="saveExpense()" class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
+            <select x-model="expenseForm.categoryId" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+              <option value="">Select Category</option>
+              <template x-for="cat in categories" :key="cat.id">
+                <option :value="cat.id" x-text="cat.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (GHS)</label>
+            <input type="number" step="0.01" min="0.01" x-model.number="expenseForm.amount" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="0.00">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Description</label>
+            <input type="text" x-model="expenseForm.description" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold" placeholder="e.g., ECG Prepaid Topup">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
+            <input type="date" x-model="expenseForm.date" required class="w-full bg-white border border-slate-300 rounded-lg text-xs p-2 font-semibold">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition shadow-xs cursor-pointer">
+              <span x-text="editingExpense ? '✓ Update Expense' : '+ Log Expense'"></span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Expenses List with Interactive Sort Headers -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 font-extrabold uppercase select-none">
+                <th @click="toggleSort('date')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Date <span x-text="sortField === 'date' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th @click="toggleSort('category')" class="py-3 px-4 hover:text-teal-700 cursor-pointer">
+                  Category <span x-text="sortField === 'category' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th class="py-3 px-4">Description</th>
+                <th @click="toggleSort('amount')" class="py-3 px-4 text-right hover:text-teal-700 cursor-pointer">
+                  Amount <span x-text="sortField === 'amount' ? (sortAsc ? '▲' : '▼') : ''"></span>
+                </th>
+                <th class="py-3 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <template x-for="item in filteredExpenses" :key="item.id">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-4 font-semibold text-slate-600" x-text="item.date"></td>
+                  <td class="py-3 px-4 font-bold text-slate-900" x-text="getCategoryName(item.categoryId)"></td>
+                  <td class="py-3 px-4 text-slate-600" x-text="item.description"></td>
+                  <td class="py-3 px-4 text-right font-extrabold text-amber-600" x-text="formatCurrency(item.amount)"></td>
+                  <td class="py-3 px-4 text-center">
+                    <div class="flex items-center justify-center gap-3">
+                      <button @click="editExpense(item)" class="text-teal-700 hover:text-teal-900 font-bold cursor-pointer">Edit</button>
+                      <button @click="deleteExpense(item.id)" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+    </div>
+  </main>
+  <!-- CATEGORY MODAL (CREATE / EDIT) -->
+  <div x-show="showCategoryModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+      <h3 class="text-base font-bold text-slate-900 mb-4" x-text="editingCategory ? 'Edit Category' : 'Create New Category'"></h3>
+      
+      <form @submit.prevent="saveCategoryModal()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category Name</label>
+          <input type="text" x-model="categoryForm.name" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Description / Scope</label>
+          <input type="text" x-model="categoryForm.description" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500" placeholder="e.g. Light, Water, Gas">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Annual Target (GHS)</label>
+          <input type="number" step="0.01" min="0" x-model.number="categoryForm.annualTarget" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="lumpSumCheck" x-model="categoryForm.isLumpSum" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer">
+          <label for="lumpSumCheck" class="text-xs font-bold text-slate-700 cursor-pointer">Mark as Annual Lump-sum (No monthly split)</label>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+          <button type="button" @click="showCategoryModal = false" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-xs cursor-pointer">Save Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import {
+      getFirestore, doc, collection, addDoc, updateDoc, deleteDoc, setDoc,
+      onSnapshot, serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import Alpine from 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/module.esm.js';
+
     const firebaseConfig = {
-        apiKey:            "AIzaSyBfaiP2_Lr70GpzSsVqe6GY-tD92z0smBs",
-        authDomain:        "family-budget-6682c.firebaseapp.com",
-        projectId:         "family-budget-6682c",
-        storageBucket:     "family-budget-6682c.firebasestorage.app",
-        messagingSenderId: "266517802191",
-        appId:             "1:266517802191:web:e6d58da953453628e15bba"
+      apiKey: "AIzaSyBfaiP2_Lr70GpzSsVqe6GY-tD92z0smBs",
+      authDomain: "family-budget-6682c.firebaseapp.com",
+      projectId: "family-budget-6682c",
+      storageBucket: "family-budget-6682c.firebasestorage.app",
+      messagingSenderId: "266517802191",
+      appId: "1:266517802191:web:e6d58da953453628e15bba"
     };
 
-    const fbApp = initializeApp(firebaseConfig);
-    const db    = getFirestore(fbApp);
-
-    // ── Firestore paths ────────────────────────────────────────────
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
     const allotmentsCol = hid => collection(db, 'households', hid, 'allotments');
-    const expensesCol   = hid => collection(db, 'households', hid, 'expenses');
-    const metaDocRef    = hid => doc(db, 'households', hid, 'meta', 'data');
-
+    const expensesCol = hid => collection(db, 'households', hid, 'expenses');
+    const categoriesCol = hid => collection(db, 'households', hid, 'categories');
+    const metaDocRef = hid => doc(db, 'households', hid, 'meta', 'data');
     const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
     Alpine.data('budgetApp', () => ({
+      householdId: '',
+      activeTab: 'dashboard',
+      selectedYear: new Date().getFullYear().toString(),
+      selectedMonth: new Date().getMonth().toString(),
+      monthNames: ['January','February','March','April','May','June','July','August','September','October','November','December'],
 
-        activeTab:    'dashboard',
-        selectedYear: new Date().getFullYear().toString(),
-        householdId:  '',
+      // 2026 = OLD CODE / OLD CATEGORIES
+      categories2026: [
+        { name: 'Housing & Utilities', annualBudget: 35040.00, includes: 'Rent, Light, Water, Gas, Garbage, Internet' },
+        { name: 'Living Expenses', annualBudget: 24000.00, includes: 'Feeding & Transportation' },
+        { name: 'Family & Personal', annualBudget: 12000.00, includes: "Wife's Bonus" },
+        { name: 'Home & Leisure', annualBudget: 20000.00, includes: 'Home Upgrades, Items Purchases' },
+        { name: 'Health & Safety', annualBudget: 10000.00, includes: 'Medical Costs, Health Insurance' },
+        { name: 'Emergency & Misc', annualBudget: 6960.00, includes: 'Emergency Fund & Miscellaneous Buffer' }
+      ],
 
-        categories2026: [
-            { name: 'Housing & Utilities', annualBudget: 35040.00, includes: 'Rent, Light, Water, Gas, Garbage, Internet' },
-            { name: 'Living Expenses',     annualBudget: 24000.00, includes: 'Feeding & Transportation' },
-            { name: 'Family & Personal',   annualBudget: 12000.00, includes: "Wife's Bonus" },
-            { name: 'Home & Leisure',      annualBudget: 20000.00, includes: 'Home Upgrades, Items Purchases' },
-            { name: 'Health & Safety',     annualBudget: 10000.00, includes: 'Medical Costs, Health Insurance' },
-            { name: 'Emergency & Misc',    annualBudget:  6960.00, includes: 'Emergency Fund & Miscellaneous Buffer' },
-        ],
-        subsequentYearTemplate: [
-            { name: 'Housing & Utilities', annualBudget: 34000.00, includes: 'Rent, Light, Water, Gas, Garbage, Internet' },
-            { name: 'Living Expenses',     annualBudget: 36000.00, includes: 'Feeding & Transportation' },
-            { name: 'Emergency Fund',      annualBudget: 10000.00, includes: 'Emergency Fund & Miscellaneous Buffer' },
-            { name: 'Health & Safety',     annualBudget: 10000.00, includes: 'Medical Costs, Health Insurance' },
-            { name: 'Wife Bonus',          annualBudget: 12000.00, includes: 'Dedicated Personal Semi-Annual Allotment' },
-            { name: 'Husband Bonus',       annualBudget: 32000.00, includes: 'Dedicated Personal Semi-Annual Allotment' },
-        ],
+      // 2027+ = NEW CODE / NEW CATEGORIES
+      categories: [
+        { id: 'cat-rent', name: 'Rent', description: 'Annual Rent Payment', annualTarget: 20400, isLumpSum: true },
+        { id: 'cat-housing', name: 'Housing & Utilities', description: 'Light, Water, Gas, Garbage Services', annualTarget: 9600, isLumpSum: false },
+        { id: 'cat-living', name: 'Living Expenses', description: 'Feeding , Toiletries & Transportation', annualTarget: 36000, isLumpSum: false },
+        { id: 'cat-emergency', name: 'Emergency & Health Fund', description: 'Combined Health Insurance, Medical Costs, Emergency Buffer', annualTarget: 10000, isLumpSum: false },
+        { id: 'cat-entertainment', name: 'Entertainment', description: 'Internet , DSTV Subscription', annualTarget: 8400, isLumpSum: false }
+      ],
 
-        customBudgets: {},
-        allotments:     [],
-        expenses:       [],
-        customYears:    [],
-        stanbicBalance: 0,
+      allotments: [],
+      expenses: [],
+      customBudgets: {},
+      customYears: [],
+      showCategoryModal: false,
+      editingCategory: null,
+      categoryForm: { name:'', description:'', annualTarget:0, isLumpSum:false },
 
-        searchDesc:     '',
-        filterCategory: 'All',
+      editingAllotmentId: null,
+      editingExpenseId: null,
+      editingAllotment: null,
+      editingExpense: null,
 
-        editingAllotmentId: null,
-        editingExpenseId:   null,
+      allotmentForm: { date:'', category:'', categoryId:'', amount:'', notes:'' },
+      expenseForm: { date:'', description:'', category:'', categoryId:'', amount:'', notes:'' },
 
-        allotmentForm: { date: '', category: '', amount: '', notes: '' },
-        expenseForm:   { date: '', description: '', category: '', amount: '', notes: '' },
+      isOnline: navigator.onLine,
+      pendingSyncCount: 0,
+      sortField: 'date',
+      sortAsc: false,
+      searchDesc: '',
+      filterCategory: 'All',
+      _unsubs: [],
 
-        _unsubs: [],
+      init() {
+        const params = new URLSearchParams(window.location.search);
+        let id = params.get('household') || localStorage.getItem('family_household_id');
+        if (!id) id = 'fam-' + uid();
+        this.householdId = id;
+        localStorage.setItem('family_household_id', id);
+        window.history.replaceState({}, '', `${location.pathname}?household=${id}`);
 
-        // ── Init ───────────────────────────────────────────────────
-        init() {
-            this.updateFormDatesToSelectedYear();
+        this.updateFormDatesToSelectedYear();
+        this.setDefaultFormCategories();
 
-            const params = new URLSearchParams(window.location.search);
-            let id = params.get('household') || localStorage.getItem('family_household_id');
-            if (!id) id = 'fam-' + uid();
-            this.householdId = id;
-            localStorage.setItem('family_household_id', id);
-            window.history.replaceState({}, '', `${location.pathname}?household=${id}`);
+        this.$watch('selectedYear', () => {
+          this.setDefaultFormCategories();
+          this.updateFormDatesToSelectedYear();
+          this.searchDesc = '';
+          this.filterCategory = 'All';
+          this.activeTab = this.selectedYear === '2026' ? 'dashboard' : 'overview';
+        });
 
-            this.setDefaultFormCategories();
-            this.$watch('selectedYear', () => {
-                this.setDefaultFormCategories();
-                this.updateFormDatesToSelectedYear();
-            });
+        window.addEventListener('online', () => {
+          this.isOnline = true;
+          this.flushOfflineQueue();
+        });
+        window.addEventListener('offline', () => { this.isOnline = false; });
 
-            this._listenAllotments();
-            this._listenExpenses();
-            this._listenMeta();
-        },
+        this.updatePendingCount();
+        this._listenAllotments();
+        this._listenExpenses();
+        this._listenMeta();
+        this._listenNewCategories();
+      },
 
-        destroy() {
-            this._unsubs.forEach(u => u());
-        },
+      destroy() { this._unsubs.forEach(u => u()); },
 
-        updateFormDatesToSelectedYear() {
-            const now = new Date();
-            const currentYearStr = now.getFullYear().toString();
-            if (this.selectedYear === currentYearStr) {
-                const today = now.toISOString().split('T')[0];
-                this.allotmentForm.date = today;
-                this.expenseForm.date   = today;
-            } else {
-                this.allotmentForm.date = `${this.selectedYear}-01-01`;
-                this.expenseForm.date   = `${this.selectedYear}-01-01`;
+      isNewYear() { return this.selectedYear !== '2026'; },
+
+      updateFormDatesToSelectedYear() {
+        const now = new Date();
+        const currentYearStr = now.getFullYear().toString();
+        const date = this.selectedYear === currentYearStr
+          ? now.toISOString().split('T')[0]
+          : `${this.selectedYear}-01-01`;
+        this.allotmentForm.date = date;
+        this.expenseForm.date = date;
+      },
+
+      getAvailableYears() {
+        const fromData = [
+          ...this.allotments.map(x => x.date?.split('-')[0]),
+          ...this.expenses.map(x => x.date?.split('-')[0])
+        ].filter(Boolean);
+        return [...new Set(['2026','2027', ...fromData, ...this.customYears])].sort();
+      },
+
+      createNewYear() {
+        const yr = prompt('Enter the year to add (e.g. 2028):')?.trim();
+        if (!yr || !/^\d{4}$/.test(yr)) {
+          if (yr) alert('Please enter a valid 4-digit year.');
+          return;
+        }
+        if (this.getAvailableYears().includes(yr)) {
+          alert('That year already exists.');
+          this.selectedYear = yr;
+          return;
+        }
+        this.customYears.push(yr);
+        this.selectedYear = yr;
+        this._saveMeta();
+      },
+
+      currentCategories() {
+        const base = this.categories2026;
+        return base.map(c => {
+          const key = `${this.selectedYear}_${c.name}`;
+          return { ...c, annualBudget: this.customBudgets[key] !== undefined ? this.customBudgets[key] : c.annualBudget };
+        });
+      },
+
+      setDefaultFormCategories() {
+        if (this.selectedYear === '2026') {
+          const first = this.currentCategories()[0]?.name || '';
+          this.allotmentForm.category = first;
+          this.expenseForm.category = first;
+        } else {
+          const first = this.categories[0]?.id || '';
+          this.allotmentForm.categoryId = first;
+          this.expenseForm.categoryId = first;
+        }
+      },
+
+      _listenAllotments() {
+        const unsub = onSnapshot(allotmentsCol(this.householdId), snap => {
+          this.allotments = snap.docs.map(d => ({id:d.id, ...d.data()}))
+            .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+        });
+        this._unsubs.push(unsub);
+      },
+
+      _listenExpenses() {
+        const unsub = onSnapshot(expensesCol(this.householdId), snap => {
+          this.expenses = snap.docs.map(d => ({id:d.id, ...d.data()}))
+            .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+        });
+        this._unsubs.push(unsub);
+      },
+
+      _listenMeta() {
+        const unsub = onSnapshot(metaDocRef(this.householdId), snap => {
+          if (snap.exists()) {
+            const d = snap.data();
+            this.customYears = d.customYears || [];
+            this.customBudgets = d.customBudgets || {};
+          }
+        });
+        this._unsubs.push(unsub);
+      },
+
+      async _saveMeta() {
+        await setDoc(metaDocRef(this.householdId), {
+          customYears: this.customYears,
+          customBudgets: this.customBudgets,
+          updatedAt: serverTimestamp()
+        }, {merge:true});
+      },
+
+      _listenNewCategories() {
+        const unsub = onSnapshot(categoriesCol(this.householdId), async snap => {
+          if (!snap.empty) {
+            this.categories = snap.docs.map(d => ({id:d.id, ...d.data()}));
+          } else {
+            for (const cat of this.categories) {
+              await setDoc(doc(db,'households',this.householdId,'categories',cat.id), cat);
             }
-        },
+          }
+          if (this.selectedYear !== '2026') this.setDefaultFormCategories();
+        });
+        this._unsubs.push(unsub);
+      },
 
-        _listenAllotments() {
-            const unsub = onSnapshot(
-                allotmentsCol(this.householdId),
-                snap => {
-                    this.allotments = snap.docs
-                        .map(d => ({ id: d.id, ...d.data() }))
-                        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-                }
-            );
-            this._unsubs.push(unsub);
-        },
+      // ---------- OLD 2026 LOGIC ----------
+      updateTargetBudget(catName, newBudget) {
+        const val = parseFloat(newBudget);
+        if (isNaN(val) || val < 0) return;
+        this.customBudgets[`${this.selectedYear}_${catName}`] = val;
+        this._saveMeta();
+      },
 
-        _listenExpenses() {
-            const unsub = onSnapshot(
-                expensesCol(this.householdId),
-                snap => {
-                    this.expenses = snap.docs
-                        .map(d => ({ id: d.id, ...d.data() }))
-                        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-                }
-            );
-            this._unsubs.push(unsub);
-        },
+      getCategoryMetrics(catName) {
+        const yr = this.selectedYear;
+        const given = this.allotments.filter(a => a.category === catName && a.date?.startsWith(yr))
+          .reduce((s,a)=>s+parseFloat(a.amount||0),0);
+        const spent = this.expenses.filter(e => e.category === catName && e.date?.startsWith(yr))
+          .reduce((s,e)=>s+parseFloat(e.amount||0),0);
+        return {given, spent, remaining:given-spent};
+      },
+      getTotalBudget() { return this.currentCategories().reduce((s,c)=>s+c.annualBudget,0); },
+      getTotalGiven() { return this.currentCategories().reduce((s,c)=>s+this.getCategoryMetrics(c.name).given,0); },
+      getTotalSpent() { return this.currentCategories().reduce((s,c)=>s+this.getCategoryMetrics(c.name).spent,0); },
+      getTotalRemaining() { return this.getTotalGiven()-this.getTotalSpent(); },
+      getYearExpenses() { return this.expenses.filter(e=>e.date?.startsWith(this.selectedYear)); },
+      getYearAllotments() { return this.allotments.filter(a=>a.date?.startsWith(this.selectedYear)); },
 
-        _listenMeta() {
-            const unsub = onSnapshot(
-                metaDocRef(this.householdId),
-                snap => {
-                    if (snap.exists()) {
-                        const d = snap.data();
-                        this.stanbicBalance = d.stanbicBalance ?? 0;
-                        this.customYears    = d.customYears    ?? [];
-                        this.customBudgets  = d.customBudgets  ?? {};
-                    }
-                }
-            );
-            this._unsubs.push(unsub);
-        },
+      async saveAllotment() {
+        if (this.selectedYear === '2026') {
+          const item = {...this.allotmentForm, category:this.allotmentForm.category, amount:parseFloat(this.allotmentForm.amount)};
+          delete item.categoryId;
+          if (this.editingAllotmentId !== null) {
+            await updateDoc(doc(db,'households',this.householdId,'allotments',this.editingAllotmentId), {...item,updatedAt:serverTimestamp()});
+          } else {
+            await addDoc(allotmentsCol(this.householdId), {...item,createdAt:serverTimestamp()});
+          }
+          this.resetAllotmentForm();
+          return;
+        }
 
-        async _saveMeta() {
-            await setDoc(metaDocRef(this.householdId), {
-                stanbicBalance: this.stanbicBalance,
-                customYears:    this.customYears,
-                customBudgets:  this.customBudgets,
-                updatedAt:      serverTimestamp(),
-            }, { merge: true });
-        },
+        const payload = {categoryId:this.allotmentForm.categoryId, amount:Number(this.allotmentForm.amount), date:this.allotmentForm.date};
+        if (this.editingAllotment) {
+          const id=this.editingAllotment.id;
+          if (this.isOnline) await setDoc(doc(db,'households',this.householdId,'allotments',id),payload);
+          else {
+            const idx=this.allotments.findIndex(a=>a.id===id);
+            if(idx>=0)this.allotments[idx]={...this.allotments[idx],...payload};
+          }
+          this.editingAllotment=null;
+        } else await this.queueOrSave('allotments',payload);
+        this.allotmentForm={date:this.allotmentForm.date,category:'',categoryId:'',amount:'',notes:''};
+        this.setDefaultFormCategories();
+      },
 
-        // ── Target Budget Editing ───────────────────────────────────
-        updateTargetBudget(catName, newBudget) {
-            const val = parseFloat(newBudget);
-            if (isNaN(val) || val < 0) return;
-            const key = `${this.selectedYear}_${catName}`;
-            this.customBudgets[key] = val;
-            this._saveMeta();
-        },
+      startEditAllotmentById(id) {
+        this.editingAllotmentId=id;
+        const a=this.allotments.find(x=>x.id===id);
+        if(a) this.allotmentForm={date:a.date,category:a.category||'',categoryId:'',amount:a.amount,notes:a.notes||''};
+      },
 
-        currentCategories() {
-            const base = this.selectedYear === '2026' ? this.categories2026 : this.subsequentYearTemplate;
-            return base.map(c => {
-                const key = `${this.selectedYear}_${c.name}`;
-                return {
-                    ...c,
-                    annualBudget: this.customBudgets[key] !== undefined ? this.customBudgets[key] : c.annualBudget
-                };
-            });
-        },
+      editAllotment(item) {
+        this.editingAllotment=item;
+        this.allotmentForm={categoryId:item.categoryId||'',amount:Number(item.amount||0),date:item.date||''};
+        this.activeTab='allotments';
+        window.scrollTo({top:0,behavior:'smooth'});
+      },
 
-        // ── Year management ────────────────────────────────────────
-        getAvailableYears() {
-            const base = ['2026', '2027'];
-            const fromData = [
-                ...this.allotments.map(a => a.date?.split('-')[0]),
-                ...this.expenses.map(e => e.date?.split('-')[0]),
-            ].filter(Boolean);
-            return [...new Set([...base, ...fromData, ...this.customYears])].sort();
-        },
+      resetAllotmentForm() {
+        this.editingAllotmentId=null;
+        this.editingAllotment=null;
+        this.updateFormDatesToSelectedYear();
+        this.allotmentForm.amount='';
+        this.allotmentForm.notes='';
+        this.setDefaultFormCategories();
+      },
 
-        createNewYear() {
-            const yr = prompt('Enter the year to add (e.g. 2028):')?.trim();
-            if (!yr || !/^\d{4}$/.test(yr)) { if (yr) alert('Please enter a valid 4-digit year.'); return; }
-            if (this.getAvailableYears().includes(yr)) { alert('That year already exists.'); this.selectedYear = yr; return; }
-            this.customYears.push(yr);
-            this.selectedYear = yr;
-            this._saveMeta();
-        },
+      async deleteAllotment(id) {
+        if(!confirm('Delete this allotment?')) return;
+        if(this.isOnline && this.selectedYear !== '2026') await deleteDoc(doc(db,'households',this.householdId,'allotments',id));
+        else await deleteDoc(doc(db,'households',this.householdId,'allotments',id));
+      },
 
-        setDefaultFormCategories() {
-            const first = this.currentCategories()[0]?.name || '';
-            this.allotmentForm.category = first;
-            this.expenseForm.category   = first;
-        },
+      async saveExpense() {
+        if (this.selectedYear === '2026') {
+          const item={...this.expenseForm,category:this.expenseForm.category,amount:parseFloat(this.expenseForm.amount)};
+          delete item.categoryId;
+          if(this.editingExpenseId!==null) await updateDoc(doc(db,'households',this.householdId,'expenses',this.editingExpenseId),{...item,updatedAt:serverTimestamp()});
+          else await addDoc(expensesCol(this.householdId),{...item,createdAt:serverTimestamp()});
+          this.resetExpenseForm();
+          return;
+        }
 
-        // ── Formatting ─────────────────────────────────────────────
-        formatCurrency(num) {
-            return parseFloat(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        },
+        const payload={categoryId:this.expenseForm.categoryId,amount:Number(this.expenseForm.amount),description:this.expenseForm.description,date:this.expenseForm.date};
+        if(this.editingExpense){
+          const id=this.editingExpense.id;
+          if(this.isOnline) await setDoc(doc(db,'households',this.householdId,'expenses',id),payload);
+          else {
+            const idx=this.expenses.findIndex(e=>e.id===id);
+            if(idx>=0)this.expenses[idx]={...this.expenses[idx],...payload};
+          }
+          this.editingExpense=null;
+        } else await this.queueOrSave('expenses',payload);
+        this.expenseForm={date:this.expenseForm.date,description:'',category:'',categoryId:'',amount:'',notes:''};
+        this.setDefaultFormCategories();
+      },
 
-        formatDisplayDate(d) {
-            if (!d) return '';
-            const [y, m, day] = d.split('-');
-            return `${day} / ${m} / ${y}`;
-        },
+      startEditExpenseById(id) {
+        this.editingExpenseId=id;
+        const e=this.expenses.find(x=>x.id===id);
+        if(e) this.expenseForm={date:e.date,description:e.description||'',category:e.category||'',categoryId:'',amount:e.amount,notes:e.notes||''};
+        window.scrollTo({top:0,behavior:'smooth'});
+      },
 
-        // ── Budget metrics ─────────────────────────────────────────
-        getCategoryMetrics(catName) {
-            const yr    = this.selectedYear;
-            const given = this.allotments.filter(a => a.category === catName && a.date?.startsWith(yr))
-                              .reduce((s, a) => s + parseFloat(a.amount || 0), 0);
-            const spent = this.expenses.filter(e => e.category === catName && e.date?.startsWith(yr))
-                              .reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-            return { given, spent, remaining: given - spent };
-        },
+      editExpense(item) {
+        this.editingExpense=item;
+        this.expenseForm={categoryId:item.categoryId||'',amount:Number(item.amount||0),description:item.description||'',date:item.date||''};
+        this.activeTab='transactions';
+        window.scrollTo({top:0,behavior:'smooth'});
+      },
 
-        getTotalBudget()    { return this.currentCategories().reduce((s, c) => s + c.annualBudget, 0); },
-        getTotalGiven()     { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).given, 0); },
-        getTotalSpent()     { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).spent, 0); },
-        getTotalRemaining() { return this.currentCategories().reduce((s, c) => s + this.getCategoryMetrics(c.name).remaining, 0); },
+      resetExpenseForm() {
+        this.editingExpenseId=null;
+        this.editingExpense=null;
+        this.updateFormDatesToSelectedYear();
+        this.expenseForm.description='';
+        this.expenseForm.amount='';
+        this.expenseForm.notes='';
+        this.setDefaultFormCategories();
+      },
 
-        // ── Year-Specific Data Fetchers ─────────────────────────────
-        getYearExpenses() {
-            return this.expenses.filter(e => e.date?.startsWith(this.selectedYear));
-        },
+      async deleteExpense(id) {
+        if(!confirm('Delete this transaction?')) return;
+        await deleteDoc(doc(db,'households',this.householdId,'expenses',id));
+      },
 
-        getYearAllotments() {
-            return this.allotments.filter(a => a.date?.startsWith(this.selectedYear));
-        },
+      getFilteredExpenses() {
+        return this.getYearExpenses().filter(e=>{
+          const q=(this.searchDesc||'').toLowerCase();
+          const matchSearch=(e.description||'').toLowerCase().includes(q);
+          const matchCategory=this.filterCategory==='All'||e.category===this.filterCategory;
+          return matchSearch&&matchCategory;
+        });
+      },
+      getFilteredTotal() { return this.getFilteredExpenses().reduce((s,e)=>s+parseFloat(e.amount||0),0); },
 
-        // ── Allotment CRUD ─────────────────────────────────────────
-        async saveAllotment() {
-            const item = { ...this.allotmentForm, amount: parseFloat(this.allotmentForm.amount) };
-            if (this.editingAllotmentId !== null) {
-                await updateDoc(doc(db, 'households', this.householdId, 'allotments', this.editingAllotmentId),
-                    { ...item, updatedAt: serverTimestamp() });
-            } else {
-                await addDoc(allotmentsCol(this.householdId),
-                    { ...item, createdAt: serverTimestamp() });
-            }
-            this.resetAllotmentForm();
-        },
+      // ---------- NEW 2027+ LOGIC ----------
+      toggleSort(field) {
+        if(this.sortField===field)this.sortAsc=!this.sortAsc;
+        else {this.sortField=field;this.sortAsc=true;}
+      },
 
-        startEditAllotmentById(id) {
-            this.editingAllotmentId = id;
-            const a = this.allotments.find(item => item.id === id);
-            if (a) {
-                this.allotmentForm = { date: a.date, category: a.category, amount: a.amount, notes: a.notes || '' };
-            }
-        },
+      get filteredAllotments() {
+        let list=this.allotments.filter(a=>a.date?.split('-')[0]===this.selectedYear && this.selectedYear!=='2026');
+        return list.sort((a,b)=>{
+          const mod=this.sortAsc?1:-1;
+          if(this.sortField==='date')return(new Date(a.date)-new Date(b.date))*mod;
+          if(this.sortField==='amount')return(Number(a.amount)-Number(b.amount))*mod;
+          if(this.sortField==='category')return this.getCategoryName(a.categoryId).localeCompare(this.getCategoryName(b.categoryId))*mod;
+          return 0;
+        });
+      },
+      get filteredExpenses() {
+        let list=this.expenses.filter(e=>e.date?.split('-')[0]===this.selectedYear && this.selectedYear!=='2026');
+        return list.sort((a,b)=>{
+          const mod=this.sortAsc?1:-1;
+          if(this.sortField==='date')return(new Date(a.date)-new Date(b.date))*mod;
+          if(this.sortField==='amount')return(Number(a.amount)-Number(b.amount))*mod;
+          if(this.sortField==='category')return this.getCategoryName(a.categoryId).localeCompare(this.getCategoryName(b.categoryId))*mod;
+          return 0;
+        });
+      },
+      getCategoryName(id) {
+        const c=this.categories.find(x=>x.id===id);
+        return c?c.name:'Unknown';
+      },
+      getCategoryAllotments(id) { return this.filteredAllotments.filter(a=>a.categoryId===id).reduce((s,a)=>s+Number(a.amount||0),0); },
+      getCategorySpent(id) { return this.filteredExpenses.filter(e=>e.categoryId===id).reduce((s,e)=>s+Number(e.amount||0),0); },
+      getMonthlySpent(id) {
+        const month=(Number(this.selectedMonth)+1).toString().padStart(2,'0');
+        return this.expenses.filter(e=>{
+          if(e.categoryId!==id||!e.date)return false;
+          const [y,m]=e.date.split('-');
+          return y===this.selectedYear&&m===month;
+        }).reduce((s,e)=>s+Number(e.amount||0),0);
+      },
+      calculateGrandTarget() { return this.categories.reduce((s,c)=>s+Number(c.annualTarget||0),0); },
+      calculateTotalAllotments() { return this.filteredAllotments.reduce((s,a)=>s+Number(a.amount||0),0); },
+      calculateTotalSpent() { return this.filteredExpenses.reduce((s,e)=>s+Number(e.amount||0),0); },
+      getYearTotalAllotments() {
+        return this.selectedYear==='2026' ? this.getYearAllotments().reduce((s,a)=>s+Number(a.amount||0),0) : this.calculateTotalAllotments();
+      },
+      getYearTotalSpent() {
+        return this.selectedYear==='2026' ? this.getYearExpenses().reduce((s,e)=>s+Number(e.amount||0),0) : this.calculateTotalSpent();
+      },
 
-        resetAllotmentForm() {
-            this.editingAllotmentId = null;
-            this.updateFormDatesToSelectedYear();
-            this.allotmentForm.category = this.currentCategories()[0]?.name || '';
-            this.allotmentForm.amount = '';
-            this.allotmentForm.notes = '';
-        },
+      openCategoryModal(){this.editingCategory=null;this.categoryForm={name:'',description:'',annualTarget:0,isLumpSum:false};this.showCategoryModal=true;},
+      editCategory(cat){this.editingCategory=cat;this.categoryForm={...cat};this.showCategoryModal=true;},
+      async saveCategoryModal(){
+        const catId=this.editingCategory?this.editingCategory.id:'cat-'+Date.now();
+        const payload={...this.categoryForm,id:catId};
+        if(this.isOnline) await setDoc(doc(db,'households',this.householdId,'categories',catId),payload);
+        else {
+          const idx=this.categories.findIndex(c=>c.id===catId);
+          if(idx>=0)this.categories[idx]=payload; else this.categories.push(payload);
+        }
+        this.showCategoryModal=false;
+      },
+      async confirmDeleteCategory(cat){
+        if(confirm(`Are you sure you want to delete "${cat.name}"? This action cannot be undone.`)){
+          if(this.isOnline)await deleteDoc(doc(db,'households',this.householdId,'categories',cat.id));
+          this.categories=this.categories.filter(c=>c.id!==cat.id);
+        }
+      },
 
-        async deleteAllotment(id) {
-            if (!confirm('Delete this allotment?')) return;
-            await deleteDoc(doc(db, 'households', this.householdId, 'allotments', id));
-        },
+      getOfflineQueue(){return JSON.parse(localStorage.getItem('fb_offline_queue')||'[]');},
+      saveOfflineQueue(q){localStorage.setItem('fb_offline_queue',JSON.stringify(q));this.updatePendingCount();},
+      updatePendingCount(){this.pendingSyncCount=this.getOfflineQueue().length;},
+      async queueOrSave(colName,payload){
+        const tempId='temp-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+        const itemWithId={...payload,id:tempId};
+        if(!this.isOnline){
+          const q=this.getOfflineQueue();q.push({colName,payload:itemWithId,id:tempId});this.saveOfflineQueue(q);
+          if(colName==='allotments')this.allotments.push(itemWithId);
+          if(colName==='expenses')this.expenses.push(itemWithId);
+          return;
+        }
+        await addDoc(collection(db,'households',this.householdId,colName),payload);
+      },
+      async flushOfflineQueue(){
+        const q=this.getOfflineQueue();if(!q.length)return;
+        for(const item of q){
+          try{
+            const {id,...payload}=item.payload;
+            await addDoc(collection(db,'households',this.householdId,item.colName),payload);
+          }catch(e){console.error('Failed to sync queue item:',e);}
+        }
+        localStorage.setItem('fb_offline_queue','[]');this.updatePendingCount();
+      },
 
-        // ── Expense CRUD ───────────────────────────────────────────
-        async saveExpense() {
-            const item = { ...this.expenseForm, amount: parseFloat(this.expenseForm.amount) };
-            if (this.editingExpenseId !== null) {
-                await updateDoc(doc(db, 'households', this.householdId, 'expenses', this.editingExpenseId),
-                    { ...item, updatedAt: serverTimestamp() });
-            } else {
-                await addDoc(expensesCol(this.householdId),
-                    { ...item, createdAt: serverTimestamp() });
-            }
-            this.resetExpenseForm();
-        },
+      exportToCSV(){
+        let csv="data:text/csv;charset=utf-8,Type,Date,Category,Description,Amount (GHS)\\n";
+        if(this.selectedYear==='2026'){
+          this.getYearAllotments().forEach(a=>csv+=`Allotment,${a.date},"${a.category||''}","",${a.amount}\\n`);
+          this.getYearExpenses().forEach(e=>csv+=`Expense,${e.date},"${e.category||''}","${(e.description||'').replace(/"/g,'""')}",${e.amount}\\n`);
+        }else{
+          this.filteredAllotments.forEach(a=>csv+=`Allotment,${a.date},"${this.getCategoryName(a.categoryId)}","",${a.amount}\\n`);
+          this.filteredExpenses.forEach(e=>csv+=`Expense,${e.date},"${this.getCategoryName(e.categoryId)}","${(e.description||'').replace(/"/g,'""')}",${e.amount}\\n`);
+        }
+        const uri=encodeURI(csv);const link=document.createElement('a');link.href=uri;link.download=`family_budget_${this.selectedYear}.csv`;document.body.appendChild(link);link.click();link.remove();
+      },
 
-        startEditExpenseById(id) {
-            this.editingExpenseId = id;
-            const e = this.expenses.find(item => item.id === id);
-            if (e) {
-                this.expenseForm = { date: e.date, description: e.description, category: e.category, amount: e.amount, notes: e.notes || '' };
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        },
-
-        resetExpenseForm() {
-            this.editingExpenseId = null;
-            this.updateFormDatesToSelectedYear();
-            this.expenseForm.description = '';
-            this.expenseForm.category = this.currentCategories()[0]?.name || '';
-            this.expenseForm.amount = '';
-            this.expenseForm.notes = '';
-        },
-
-        async deleteExpense(id) {
-            if (!confirm('Delete this transaction?')) return;
-            await deleteDoc(doc(db, 'households', this.householdId, 'expenses', id));
-        },
-
-        // ── Transactions/History Filters ──────────────────────────
-        getFilteredExpenses() {
-            return this.getYearExpenses().filter(e => {
-                const matchSearch   = e.description?.toLowerCase().includes(this.searchDesc.toLowerCase());
-                const matchCategory = this.filterCategory === 'All' || e.category === this.filterCategory;
-                return matchSearch && matchCategory;
-            });
-        },
-
-        getFilteredTotal() {
-            return this.getFilteredExpenses().reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-        },
-
+      formatCurrency(val){return Number(val||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});},
+      formatDisplayDate(d){if(!d)return '';const [y,m,day]=d.split('-');return `${day} / ${m} / ${y}`;}
     }));
 
     Alpine.start();
-    </script>
+  </script>
 </body>
 </html>
