@@ -816,11 +816,18 @@
 
       init() {
         const params = new URLSearchParams(window.location.search);
-        let id = params.get('household') || localStorage.getItem('family_household_id');
-        if (!id) id = 'fam-' + uid();
+        // IMPORTANT: Preserve the exact household used by the original app.
+        // The old app stored its Firestore household ID in the URL/localStorage.
+        // Never silently generate a new household here, because that makes
+        // existing Firebase allotments/transactions appear to be missing.
+        const urlId = params.get('household');
+        const storedId = localStorage.getItem('family_household_id');
+        const legacyId = localStorage.getItem('householdId');
+        const id = urlId || storedId || legacyId || 'fam-default';
+
         this.householdId = id;
         localStorage.setItem('family_household_id', id);
-        window.history.replaceState({}, '', `${location.pathname}?household=${id}`);
+        window.history.replaceState({}, '', `${location.pathname}?household=${encodeURIComponent(id)}`);
 
         this.updateFormDatesToSelectedYear();
         this.setDefaultFormCategories();
@@ -885,10 +892,15 @@
       },
 
       currentCategories() {
-        const base = this.categories2026;
+        const base = this.selectedYear === '2026' ? this.categories2026 : this.categories;
         return base.map(c => {
-          const key = `${this.selectedYear}_${c.name}`;
-          return { ...c, annualBudget: this.customBudgets[key] !== undefined ? this.customBudgets[key] : c.annualBudget };
+          const name = c.name;
+          const budget = c.annualBudget ?? c.annualTarget ?? 0;
+          const key = `${this.selectedYear}_${name}`;
+          return {
+            ...c,
+            annualBudget: this.customBudgets[key] !== undefined ? this.customBudgets[key] : budget
+          };
         });
       },
 
@@ -905,18 +917,28 @@
       },
 
       _listenAllotments() {
-        const unsub = onSnapshot(allotmentsCol(this.householdId), snap => {
-          this.allotments = snap.docs.map(d => ({id:d.id, ...d.data()}))
-            .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-        });
+        const unsub = onSnapshot(
+          allotmentsCol(this.householdId),
+          snap => {
+            this.allotments = snap.docs.map(d => ({id:d.id, ...d.data()}))
+              .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+            console.log('[Family Budget] Allotments loaded:', this.allotments.length, 'household:', this.householdId);
+          },
+          err => console.error('[Family Budget] Allotments Firestore error:', err)
+        );
         this._unsubs.push(unsub);
       },
 
       _listenExpenses() {
-        const unsub = onSnapshot(expensesCol(this.householdId), snap => {
-          this.expenses = snap.docs.map(d => ({id:d.id, ...d.data()}))
-            .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-        });
+        const unsub = onSnapshot(
+          expensesCol(this.householdId),
+          snap => {
+            this.expenses = snap.docs.map(d => ({id:d.id, ...d.data()}))
+              .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+            console.log('[Family Budget] Transactions loaded:', this.expenses.length, 'household:', this.householdId);
+          },
+          err => console.error('[Family Budget] Transactions Firestore error:', err)
+        );
         this._unsubs.push(unsub);
       },
 
@@ -949,7 +971,7 @@
             }
           }
           if (this.selectedYear !== '2026') this.setDefaultFormCategories();
-        });
+        }, err => console.error('[Family Budget] Categories Firestore error:', err));
         this._unsubs.push(unsub);
       },
 
