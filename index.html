@@ -546,11 +546,17 @@
             return;
           }
 
-          const { collection, doc, onSnapshot } = window.firestoreTools;
+          const { collection, doc, setDoc, onSnapshot } = window.firestoreTools;
 
-          onSnapshot(collection(window.db, 'households', this.householdId, 'categories'), (snapshot) => {
+          // Listen to Categories & Auto-seed defaults if remote DB is empty
+          onSnapshot(collection(window.db, 'households', this.householdId, 'categories'), async (snapshot) => {
             if (!snapshot.empty) {
               this.categories = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            } else {
+              // Seed initial hardcoded categories to Firestore so they are not lost
+              for (const cat of this.categories) {
+                await setDoc(doc(window.db, 'households', this.householdId, 'categories', cat.id), cat);
+              }
             }
           });
 
@@ -689,6 +695,7 @@
         },
         async saveCategoryModal() {
           const { collection, doc, setDoc } = window.firestoreTools;
+          // Preserve exact existing category ID when editing
           const catId = this.editingCategory ? this.editingCategory.id : 'cat-' + Date.now();
           const payload = { ...this.categoryForm, id: catId };
 
